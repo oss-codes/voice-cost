@@ -121,7 +121,7 @@ export const frameworks = [
   },
   {
     slug: "openai-agents-sdk-voice",
-    name: "OpenAI Agents SDK — Voice",
+    name: "OpenAI Agents SDK for Voice",
     language: "Python / TypeScript",
     license: "MIT",
     architecture: "Agent voice pipelines",

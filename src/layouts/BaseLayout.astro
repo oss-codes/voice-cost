@@ -40,12 +40,12 @@ const fullTitle = title.includes("Voice OSS") ? title : `${title} | Voice OSS`;
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Voice OSS — Voice AI costs, decoded" />
+    <meta property="og:image:alt" content="Voice OSS: Voice AI costs, decoded" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={new URL("/og.png", site)} />
-    <meta name="twitter:image:alt" content="Voice OSS — Voice AI costs, decoded" />
+    <meta name="twitter:image:alt" content="Voice OSS: Voice AI costs, decoded" />
     {
       structuredData && (
         <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
