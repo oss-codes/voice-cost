@@ -1,0 +1,23 @@
+---
+type Faq = {
+  readonly question: string;
+  readonly answer: string;
+};
+
+type Props = {
+  readonly items: readonly Faq[];
+};
+
+const { items } = Astro.props;
+---
+
+<div class="faq-list">
+  {
+    items.map((item) => (
+      <details>
+        <summary>{item.question}</summary>
+        <div class="faq-answer">{item.answer}</div>
+      </details>
+    ))
+  }
+</div>

@@ -1,0 +1,149 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { carriers, recordingOptions } from "../../data/pricing";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Voice AI Telephony Cost Calculator"
+  description="Estimate monthly Voice AI phone costs across Twilio, Daily, SIP, recording, numbers, and failed outbound attempts."
+>
+  <PageHero
+    eyebrow="telephony calculator"
+    title="Price the phone network around the agent."
+    description="Carrier minutes are not the platform minute. Add connected traffic, recording, phone numbers, and failed outbound attempts to see the telephony layer on its own."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="metric-tool" data-telephony>
+      <div class="metric-controls">
+        <label class="field">
+          <span class="field-label">Connected minutes</span>
+          <input name="minutes" type="number" min="1" max="10000000" value="10000" />
+        </label>
+        <label class="field">
+          <span class="field-label">Carrier</span>
+          <select name="carrier">
+            {carriers.map((carrier) => <option value={carrier.id}>{carrier.name}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Recording</span>
+          <select name="recording">
+            {recordingOptions.map((recording) => <option value={recording.id}>{recording.name}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Phone numbers</span>
+          <input name="numbers" type="number" min="0" max="100000" value="3" />
+        </label>
+        <label class="field">
+          <span class="field-label">Failed outbound attempts</span>
+          <input name="failed" type="number" min="0" max="10000000" value="500" />
+        </label>
+        <label class="field">
+          <span class="field-label">Failed-attempt charge</span>
+          <input name="failedCost" type="number" min="0" max="10" step="0.001" value="0.015" />
+          <span class="field-note">Set to zero when your carrier has no minimum attempt charge.</span>
+        </label>
+      </div>
+      <div class="metric-results" aria-live="polite">
+        <span class="data-label">Monthly telephony</span>
+        <strong class="metric-primary" data-monthly>$0</strong>
+        <p class="metric-explanation">
+          Effective connected minute: <strong data-minute>$0</strong>. Carrier:
+          <strong data-carrier>$0</strong>, recording: <strong data-recording>$0</strong>, numbers:
+          <strong data-numbers>$0</strong>, attempts: <strong data-failed>$0</strong>.
+        </p>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="scope"
+      title="What still changes the carrier bill"
+      description="Destination country, mobile vs local termination, toll-free numbers, SIP trunking, transfers, media streams, branded calling, and volume tiers can all change the answer."
+    />
+    <ul class="source-list">
+      {carriers.map((carrier) => <li><a class="source-badge" href={carrier.sourceUrl}>{carrier.name} ↗</a></li>)}
+    </ul>
+  </section>
+</BaseLayout>
+
+<script>
+  import { z } from "zod";
+
+  import { carriers, recordingOptions } from "../../data/pricing";
+  import { estimateTelephonyCost } from "../../lib/calculate";
+
+  const form = document.querySelector("[data-telephony]");
+  const InputSchema = z.object({
+    connectedMinutes: z.number().int().min(1).max(10_000_000),
+    carrierId: z.string().min(1),
+    recordingId: z.string().min(1),
+    phoneNumbers: z.number().int().min(0).max(100_000),
+    failedAttempts: z.number().int().min(0).max(10_000_000),
+    failedAttemptCost: z.number().min(0).max(10),
+  });
+  const money = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  });
+  const preciseMoney = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 4,
+  });
+
+  if (form instanceof HTMLFormElement) {
+    const numberValue = (name: string) => {
+      const field = form.elements.namedItem(name);
+      return field instanceof HTMLInputElement ? Number(field.value) : Number.NaN;
+    };
+    const selectValue = (name: string) => {
+      const field = form.elements.namedItem(name);
+      return field instanceof HTMLSelectElement ? field.value : "";
+    };
+    const output = (selector: string, text: string) => {
+      const element = form.querySelector(selector);
+      if (element instanceof HTMLElement) element.textContent = text;
+    };
+    const render = () => {
+      const parsed = InputSchema.safeParse({
+        connectedMinutes: numberValue("minutes"),
+        carrierId: selectValue("carrier"),
+        recordingId: selectValue("recording"),
+        phoneNumbers: numberValue("numbers"),
+        failedAttempts: numberValue("failed"),
+        failedAttemptCost: numberValue("failedCost"),
+      });
+      if (!parsed.success) return;
+      const carrier = carriers.find((item) => item.id === parsed.data.carrierId);
+      const recording = recordingOptions.find((item) => item.id === parsed.data.recordingId);
+      if (carrier === undefined || recording === undefined) return;
+      const result = estimateTelephonyCost({
+        connectedMinutes: parsed.data.connectedMinutes,
+        carrierPerMinute: carrier.perMinute,
+        recordingPerMinute: recording.perMinute,
+        phoneNumbers: parsed.data.phoneNumbers,
+        phoneNumberMonthly: carrier.monthlyBase,
+        failedAttempts: parsed.data.failedAttempts,
+        failedAttemptCost: parsed.data.failedAttemptCost,
+      });
+      output("[data-monthly]", money.format(result.monthly));
+      output("[data-minute]", preciseMoney.format(result.perConnectedMinute));
+      output("[data-carrier]", money.format(result.breakdown.carrier));
+      output("[data-recording]", money.format(result.breakdown.recording));
+      output("[data-numbers]", money.format(result.breakdown.numbers));
+      output("[data-failed]", money.format(result.breakdown.failedAttempts));
+    };
+    form.addEventListener("input", render);
+    form.addEventListener("change", render);
+    render();
+  }
+</script>

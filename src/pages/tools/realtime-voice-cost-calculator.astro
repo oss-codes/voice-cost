@@ -1,0 +1,66 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import RealtimeVoiceCalculator from "../../components/RealtimeVoiceCalculator.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { realtimeModels, VERIFIED_AT } from "../../data/pricing";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Realtime Voice AI Cost Calculator",
+  url: "https://voice.oss.codes/tools/realtime-voice-cost-calculator/",
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Any",
+  description:
+    "Estimate speech-to-speech Voice AI costs with separate caller audio, agent audio, platform, carrier, and recording charges.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Realtime Voice AI Cost Calculator"
+  description="Calculate speech-to-speech Voice AI costs for GPT-Realtime and Gemini Live, including caller audio, agent audio, platform, telephony, and recording."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="speech-to-speech calculator"
+    title="Realtime voice costs both ways."
+    description="Model native audio-in/audio-out systems separately from an STT → LLM → TTS pipeline. Adjust the caller-to-agent talk ratio and see every material layer."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <RealtimeVoiceCalculator />
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="how to read it"
+      title="Connected time is not billed audio time"
+      description="A five-minute call contains caller speech, generated agent speech, and silence. Realtime providers may bill input and output audio at different token rates, while the platform and carrier usually bill connected time."
+    />
+    <article class="prose">
+      <p><code>model cost = caller audio minutes × input rate + agent audio minutes × output rate</code></p>
+      <p><code>monthly total = platform + realtime model + carrier + recording</code></p>
+      <p>
+        OpenAI entries convert published audio-token prices into audio-minute estimates using 600
+        input audio tokens and 1,200 output audio tokens per minute. Actual bills also depend on
+        retained conversation context, cached input, text and reasoning tokens, interruptions,
+        silence handling, and provider-side truncation. Replace these planning assumptions with
+        usage-log measurements before committing spend.
+      </p>
+    </article>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="primary sources"
+      title="Current realtime model pricing"
+      description={`Public model pricing checked ${VERIFIED_AT}. Preview model rates and names can change without notice.`}
+    />
+    <ul class="source-list">
+      {realtimeModels.map((model) => <li><a class="source-badge" href={model.sourceUrl}>{model.name} ↗</a></li>)}
+    </ul>
+  </section>
+</BaseLayout>

@@ -1,0 +1,91 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { alternatives, alternativeRegions, DIRECTORY_VERIFIED_AT } from "../../data/directory";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Voice AI platforms and alternatives",
+  numberOfItems: alternatives.length,
+  itemListElement: alternatives.map((alternative, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: alternative.name,
+    url: `https://voice.oss.codes/alternatives/${alternative.slug}/`,
+  })),
+};
+---
+
+<BaseLayout
+  title="Voice AI Platforms and Alternatives by Region"
+  description="Compare Ringg AI, Bolna, Smallest.ai, Vapi, Retell, Bland, ElevenLabs, Synthflow, PolyAI, and other Voice AI platforms across India, the US, and Europe."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="global platform directory"
+    title="Voice AI is not one market."
+    description={`Compare ${alternatives.length} hosted and hybrid platforms across India, the United States, and Europe. Public positioning and pricing links checked ${DIRECTORY_VERIFIED_AT}.`}
+    parent={{ href: "/alternatives/", label: "alternatives" }}
+  >
+    <div class="cluster hero-actions">
+      <a class="button button-primary" href="#platforms">browse platforms →</a>
+      <a class="button" href="/open-source/">browse OSS frameworks</a>
+    </div>
+  </PageHero>
+
+  <section class="section">
+    <SectionHead
+      label="regions"
+      title="Start where your calls terminate"
+      description="Language coverage, phone-number availability, local carrier rules, data handling, support hours, currency, and tax treatment can matter more than the demo voice."
+    />
+    <div class="comparison-grid">
+      {
+        alternativeRegions.map((region, index) => (
+          <a class="comparison-card" href={`/alternatives/regions/${region.slug}/`}>
+            <span class="card-index">0{index + 1}</span>
+            <span class="card-arrow" aria-hidden="true">↗</span>
+            <h3>{region.name}</h3>
+            <p>{region.description}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section" id="platforms">
+    <SectionHead
+      label="platform map"
+      title="Hosted, hybrid, and enterprise choices"
+      description="Price notes preserve each vendor's published structure. They are discovery signals, not normalized quotes; use the calculator only for platforms whose components are modeled."
+    />
+    <div class="provider-grid directory-grid">
+      {
+        alternatives.map((alternative, index) => (
+          <a class="provider-card directory-card" href={`/alternatives/${alternative.slug}/`}>
+            <span class="card-index">{String(index + 1).padStart(2, "0")}</span>
+            <span class="card-arrow" aria-hidden="true">↗</span>
+            <div class="card-meta">
+              <span>{alternative.market}</span>
+              <span>{alternative.model}</span>
+            </div>
+            <h3>{alternative.name}</h3>
+            <p>{alternative.priceNote}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="notice">
+      <strong>compare</strong>
+      <span>
+        Ask every vendor for the same traffic profile: direction, destination, connected minutes,
+        average handle time, peak concurrency, recording, model, language mix, and human transfer rate.
+      </span>
+    </div>
+  </section>
+</BaseLayout>

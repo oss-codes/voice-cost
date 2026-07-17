@@ -1,0 +1,117 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Voice AI Call Concurrency Calculator"
+  description="Calculate how many simultaneous Voice AI calls and provider concurrency lines you need from monthly volume, handle time, and peak factor."
+>
+  <PageHero
+    eyebrow="capacity planner"
+    title="Turn call volume into concurrent lines."
+    description="Average traffic hides the burst. Model monthly calls, handle time, business hours, and your peak-to-average ratio to size a safer concurrency limit."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="metric-tool" data-concurrency>
+      <div class="metric-controls">
+        <label class="field">
+          <span class="field-label">Calls per month</span>
+          <input name="calls" type="number" min="1" max="10000000" value="12000" />
+        </label>
+        <label class="field">
+          <span class="field-label">Average call minutes</span>
+          <input name="minutes" type="number" min="0.1" max="240" step="0.5" value="5" />
+        </label>
+        <label class="field">
+          <span class="field-label">Business hours per day</span>
+          <input name="hours" type="number" min="1" max="24" step="0.5" value="10" />
+        </label>
+        <label class="field">
+          <span class="field-label">Business days per month</span>
+          <input name="days" type="number" min="1" max="31" value="22" />
+        </label>
+        <label class="field">
+          <span class="field-label">Peak factor</span>
+          <input name="peak" type="number" min="1" max="10" step="0.1" value="2.4" />
+          <span class="field-note">Use 2–3 for ordinary bursts; higher for campaigns or incidents.</span>
+        </label>
+      </div>
+      <div class="metric-results" aria-live="polite">
+        <span class="data-label">Recommended concurrency</span>
+        <strong class="metric-primary"><span data-lines>0</span> lines</strong>
+        <p class="metric-explanation">
+          Average simultaneous calls: <strong data-average>0</strong>. Modeled peak:
+          <strong data-peak>0</strong>. Add provider-specific headroom for retries, transfers, and
+          regional failover.
+        </p>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="formula"
+      title="Concurrency is occupied minutes divided by available minutes"
+      description="Monthly call minutes are spread over your operating window, then multiplied by a peak factor. The result is rounded up because partial lines cannot accept calls."
+    />
+    <div class="prose">
+      <p>
+        <code>average concurrency = calls × handle time ÷ (hours × days × 60)</code>
+      </p>
+      <p>
+        <code>required lines = ceil(average concurrency × peak factor)</code>
+      </p>
+      <p>
+        This is a planning estimate, not a queueing simulation. For strict answer-time SLAs, add
+        arrival-rate distributions, abandonment, retry behavior, and Erlang-C or a discrete-event
+        traffic model.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { z } from "zod";
+
+  import { estimateConcurrency } from "../../lib/calculate";
+
+  const form = document.querySelector("[data-concurrency]");
+  const InputSchema = z.object({
+    callsPerMonth: z.number().int().min(1).max(10_000_000),
+    averageMinutes: z.number().min(0.1).max(240),
+    businessHoursPerDay: z.number().min(1).max(24),
+    businessDaysPerMonth: z.number().int().min(1).max(31),
+    peakFactor: z.number().min(1).max(10),
+  });
+
+  if (form instanceof HTMLFormElement) {
+    const value = (name: string) => {
+      const field = form.elements.namedItem(name);
+      return field instanceof HTMLInputElement ? Number(field.value) : Number.NaN;
+    };
+    const output = (selector: string, text: string) => {
+      const element = form.querySelector(selector);
+      if (element instanceof HTMLElement) element.textContent = text;
+    };
+    const render = () => {
+      const parsed = InputSchema.safeParse({
+        callsPerMonth: value("calls"),
+        averageMinutes: value("minutes"),
+        businessHoursPerDay: value("hours"),
+        businessDaysPerMonth: value("days"),
+        peakFactor: value("peak"),
+      });
+      if (!parsed.success) return;
+      const result = estimateConcurrency(parsed.data);
+      output("[data-lines]", result.requiredLines.toLocaleString("en-US"));
+      output("[data-average]", result.averageCallsInProgress.toFixed(2));
+      output("[data-peak]", result.peakCallsInProgress.toFixed(2));
+    };
+    form.addEventListener("input", render);
+    render();
+  }
+</script>

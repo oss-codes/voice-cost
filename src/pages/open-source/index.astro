@@ -1,0 +1,86 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { DIRECTORY_VERIFIED_AT, frameworks } from "../../data/directory";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Open-source Voice AI frameworks",
+  numberOfItems: frameworks.length,
+  itemListElement: frameworks.map((framework, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: framework.name,
+    url: `https://voice.oss.codes/open-source/${framework.slug}/`,
+  })),
+};
+---
+
+<BaseLayout
+  title="Open-Source Voice AI Frameworks"
+  description="Compare TEN Framework, Pipecat, LiveKit Agents, Bolna, Dograh, Vocode, VideoSDK Agents, FastRTC, and the OpenAI Agents SDK voice stack."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="open-source directory"
+    title="Own the voice agent runtime."
+    description={`A source-checked map of ${frameworks.length} open frameworks and libraries for realtime voice agents. Licenses and maintenance signals checked ${DIRECTORY_VERIFIED_AT}.`}
+    parent={{ href: "/open-source/", label: "open source" }}
+  >
+    <div class="cluster hero-actions">
+      <a class="button button-primary" href="#frameworks">browse frameworks →</a>
+      <a class="button" href="/alternatives/">compare hosted platforms</a>
+    </div>
+  </PageHero>
+
+  <section class="section" id="frameworks">
+    <SectionHead
+      label="verified projects"
+      title="Framework is not the same as platform"
+      description="Some projects provide a media pipeline; others include telephony, a visual builder, or deployment. The missing operational layers still become part of your cost."
+    />
+    <div class="provider-grid directory-grid">
+      {
+        frameworks.map((framework, index) => (
+          <a class="provider-card directory-card" href={`/open-source/${framework.slug}/`}>
+            <span class="card-index">{String(index + 1).padStart(2, "0")}</span>
+            <span class="card-arrow" aria-hidden="true">↗</span>
+            <div class="card-meta">
+              <span>{framework.license}</span>
+              <span>{framework.language}</span>
+            </div>
+            <h3>{framework.name}</h3>
+            <p>{framework.summary}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="selection rule"
+      title="Choose the boundary you want to own"
+      description="A lower platform bill can mean a larger engineering and operations bill. Start with media ownership, telephony, deployment, and compliance before comparing model integrations."
+    />
+    <div class="data-strip">
+      <div class="data-cell best"><span class="data-label">pipeline</span><strong class="data-value">code</strong><span class="cost-meta">maximum component control</span></div>
+      <div class="data-cell"><span class="data-label">platform</span><strong class="data-value">operate</strong><span class="cost-meta">UI, campaigns, analytics</span></div>
+      <div class="data-cell"><span class="data-label">cloud</span><strong class="data-value">delegate</strong><span class="cost-meta">hosting and scale layer</span></div>
+      <div class="data-cell"><span class="data-label">carrier</span><strong class="data-value">connect</strong><span class="cost-meta">numbers, SIP, compliance</span></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="notice">
+      <strong>scope</strong>
+      <span>
+        This is a maintained directory of substantial, publicly verifiable voice-agent projects,
+        not a claim that every repository on GitHub is listed. Missing a serious project? Open an
+        issue through <a class="text-link" href="https://github.com/oss-codes">OSS.codes on GitHub</a>.
+      </span>
+    </div>
+  </section>
+</BaseLayout>

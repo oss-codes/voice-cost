@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Voice OSS waveform</title>
+  <rect width="64" height="64" fill="#0a0a0a"/>
+  <path d="M9 32h7l4-14 8 29 7-25 6 19 4-9h10" fill="none" stroke="#c8f55a" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter"/>
+</svg>

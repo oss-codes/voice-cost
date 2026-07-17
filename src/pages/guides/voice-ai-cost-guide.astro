@@ -1,0 +1,228 @@
+---
+import FaqList from "../../components/FaqList.astro";
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { VERIFIED_AT } from "../../data/pricing";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const faqs = [
+  {
+    question: "How much does a Voice AI agent cost per minute?",
+    answer:
+      "A practical public-list-price range is roughly $0.07 to $0.30 per connected minute before enterprise discounts. The result depends on platform structure, model quality, telephony direction, recording, and optional compliance or analytics features.",
+  },
+  {
+    question: "What is the cheapest Voice AI stack?",
+    answer:
+      "Low platform fees plus efficient STT, a small language model, inexpensive TTS, and app-based audio can produce the lowest direct bill. The cheapest production stack must also meet latency, quality, reliability, and operational requirements.",
+  },
+  {
+    question: "Does per-minute pricing include phone calls?",
+    answer:
+      "Often it does not. Vapi, Retell, Pipecat, and LiveKit expose platform or infrastructure layers and carrier spend is separate. Even bundled agent platforms commonly pass through telephony by destination and direction.",
+  },
+  {
+    question: "Is self-hosting Voice AI cheaper?",
+    answer:
+      "It can be at sustained volume, but infrastructure is only part of total cost. Include engineering, on-call operations, autoscaling, observability, security patching, networking, and the cost of idle capacity before comparing it with managed cloud pricing.",
+  },
+] as const;
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: "Voice AI Cost Guide: How to Calculate the Real Price Per Call",
+  description:
+    "A practical guide to Voice AI platform, STT, LLM, TTS, telephony, recording, concurrency, and self-hosting costs.",
+  dateModified: VERIFIED_AT,
+  author: { "@type": "Organization", name: "OSS.codes" },
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: { "@type": "Answer", text: faq.answer },
+  })),
+};
+---
+
+<BaseLayout
+  title="Voice AI Cost Guide: Price Per Minute and Per Call"
+  description="Learn what Voice AI agents really cost per minute and per call, including platforms, STT, LLMs, TTS, phone carriers, recording, concurrency, and self-hosting."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="field guide"
+    title="How much does Voice AI really cost?"
+    description="The advertised platform minute is usually one layer of the bill. This guide builds the full cost from the audio entering the call to the recording stored after it ends."
+    parent={{ href: "/guides/voice-ai-cost-guide/", label: "guides" }}
+  >
+    <div class="cluster hero-actions">
+      <a class="button button-primary" href="/calculator/">calculate your stack →</a>
+      <a class="button" href="/pricing/">browse provider rates</a>
+    </div>
+  </PageHero>
+
+  <section class="section">
+    <div class="data-strip">
+      <div class="data-cell"><span class="data-label">Typical public range</span><strong class="data-value">$0.07–$0.30</strong><span class="cost-meta">per connected minute</span></div>
+      <div class="data-cell"><span class="data-label">Cost layers</span><strong class="data-value">6+</strong><span class="cost-meta">before operations</span></div>
+      <div class="data-cell"><span class="data-label">Traffic variable</span><strong class="data-value">peak</strong><span class="cost-meta">not only average volume</span></div>
+      <div class="data-cell best"><span class="data-label">Data snapshot</span><strong class="data-value">{VERIFIED_AT}</strong><span class="cost-meta">source-linked</span></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="the short answer"
+      title="A call costs more than one advertised minute"
+      description="A useful estimate starts with connected minutes, then adds every metered layer that remains active while the conversation runs."
+    />
+    <article class="prose">
+      <p>
+        Most production Voice AI calls land somewhere between <strong>$0.07 and $0.30 per connected
+        minute</strong> at public self-serve prices. A five-minute call can therefore cost roughly
+        $0.35 to $1.50 before implementation, support, and enterprise commitments. That range is
+        wide because providers sell different units under similar “per-minute” language.
+      </p>
+      <p>
+        Vapi publishes a platform fee and passes model costs through. Retell publishes voice
+        infrastructure, TTS, LLM, add-on, and telephony components. Bland publishes a bundled rate
+        that includes STT, LLM, and TTS. Pipecat and LiveKit are closer to infrastructure layers,
+        leaving model selection and carrier design in your hands. Comparing only the headline
+        rate makes bundled platforms look expensive and component platforms look artificially
+        cheap.
+      </p>
+
+      <h2>1. Platform and orchestration</h2>
+      <p>
+        The platform layer keeps a realtime agent running, coordinates turns, invokes tools, and
+        manages the live session. Public pricing can be a pure usage fee, a monthly plan with
+        included minutes, a voice-infrastructure rate, or a bundled agent minute. First classify
+        the pricing structure, then decide which remaining components must be added.
+      </p>
+      <p>
+        Included concurrency also matters. A low per-minute fee can be overshadowed by paid lines
+        when traffic bursts. Vapi's public Build plan includes a base number of concurrent calls
+        and charges for extra lines. Retell includes a larger self-serve concurrency allowance and
+        sells additional capacity. Bland ties concurrency to plan tiers. Infrastructure products
+        make you responsible for the capacity model directly.
+      </p>
+
+      <h2>2. Speech to text</h2>
+      <p>
+        Streaming STT turns caller audio into tokens or text. It is commonly billed per audio
+        minute or hour, sometimes with different rates for multilingual, medical, diarization, or
+        conversational models. The price difference between efficient streaming models is often
+        small compared with TTS or a large LLM, but transcription quality can affect every later
+        stage of the call.
+      </p>
+      <p>
+        Silence handling and billing granularity matter. Per-second billing produces a different
+        invoice from rounding each call or segment upward. Multichannel audio may also multiply
+        billable duration. Use your provider's exact metering definition when moving from an
+        estimate to a budget.
+      </p>
+
+      <h2>3. Language model inference</h2>
+      <p>
+        LLM cost is usually token-based even when a platform displays a convenient per-minute
+        estimate. System prompts, tool definitions, conversation history, caller verbosity, agent
+        response length, caching, and reasoning tiers all change the token count. A short
+        appointment reminder can use a small, fast model; a regulated support call with long
+        context and complex tools may need a more capable and more expensive model.
+      </p>
+      <p>
+        Use representative transcripts to estimate input and output tokens per turn. Do not assume
+        the first turn's token use remains flat: conversation history can accumulate, particularly
+        in speech-to-speech systems that repeatedly process audio context.
+      </p>
+
+      <h2>4. Text to speech and realtime audio models</h2>
+      <p>
+        TTS may be billed by character, token, credit, or generated minute. Voice quality,
+        multilingual support, latency, and cloning features can create large price differences.
+        An inexpensive platform paired with a premium voice can cost more than a bundled platform.
+        Estimate the share of each call during which the agent speaks rather than charging TTS for
+        the full connected duration.
+      </p>
+      <p>
+        Speech-to-speech models combine listening, reasoning, and generation into one realtime
+        model. Their bills are not directly comparable with a traditional STT → LLM → TTS pipeline
+        unless both are normalized to the same call length, turn pattern, and context behavior.
+      </p>
+
+      <h2>5. Telephony and transport</h2>
+      <p>
+        Phone calls introduce carrier charges. Inbound and outbound rates differ; local,
+        toll-free, mobile, international, and SIP traffic differ again. Phone-number rental,
+        transfers, media streams, call recording, answering-machine detection, branded calling,
+        and failed-attempt minimums can each add a separate line item.
+      </p>
+      <p>
+        Model phone spend independently with the
+        <a href="/tools/telephony-cost-calculator/">telephony calculator</a>. This is especially
+        important for outbound campaigns, where failed or short calls can create a materially
+        different cost per successful conversation.
+      </p>
+
+      <h2>6. Recording, analytics, and compliance</h2>
+      <p>
+        Recording commonly separates processing from storage. Transcription, summarization,
+        quality assurance, PII removal, knowledge bases, denoising, and observability can all have
+        their own per-minute or monthly charge. Retention policy affects storage costs and
+        compliance exposure. For a reliable forecast, define what is recorded, how long it is
+        kept, who can access it, and which post-call jobs run.
+      </p>
+
+      <h2>7. Concurrency and idle capacity</h2>
+      <p>
+        Monthly minutes describe volume, not arrival shape. Ten thousand minutes spread across a
+        month can require one line or dozens, depending on business hours, campaign timing, and
+        peak-to-average ratio. Managed platforms may charge per additional concurrent call.
+        Self-hosted systems must provision enough idle compute to accept the burst.
+      </p>
+      <p>
+        Use the <a href="/tools/concurrency-calculator/">concurrency planner</a>, then add headroom
+        for transfers, retries, regional failover, deployments, and provider rate limits.
+      </p>
+
+      <h2>8. Managed cloud versus self-hosting</h2>
+      <p>
+        Self-hosting removes or reduces a platform fee, but creates an operating system around the
+        agent. Include compute, networking, load balancing, autoscaling, realtime media tuning,
+        observability, deployment safety, patching, incident response, and engineering time.
+        Idle capacity is part of the price because a call cannot wait for a cold cluster during a
+        burst.
+      </p>
+      <p>
+        Managed cloud is usually easier to justify during product discovery and early production.
+        Self-hosting becomes financially interesting when traffic is sustained, the team already
+        operates realtime infrastructure, or control and data residency are worth more than the
+        direct platform savings.
+      </p>
+
+      <h2>A practical forecasting workflow</h2>
+      <ol>
+        <li>Measure connected minutes, average handle time, direction, and success rate.</li>
+        <li>Choose a platform architecture and classify bundled versus separate components.</li>
+        <li>Price STT, LLM, TTS, carrier, recording, and add-ons at the same usage profile.</li>
+        <li>Model peak concurrency separately from monthly volume.</li>
+        <li>Add operational and compliance costs for a true ownership comparison.</li>
+        <li>Request provider quotes using the same scenario and compare them with the public model.</li>
+      </ol>
+      <p>
+        Start with the <a href="/calculator/">Voice AI cost calculator</a>, then replace its defaults
+        with your own traffic and provider terms. A transparent estimate is not an invoice, but it
+        is a much stronger purchasing baseline than one advertised rate.
+      </p>
+    </article>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="FAQ"
+      title="Voice AI pricing questions"
+      description="The answers most teams need before they can compare vendor proposals on equal terms."
+    />
+    <FaqList items={faqs} />
+  </section>
+</BaseLayout>

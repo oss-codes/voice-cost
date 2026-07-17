@@ -1,0 +1,24 @@
+---
+type Props = {
+  readonly eyebrow: string;
+  readonly title: string;
+  readonly description: string;
+  readonly parent?: { readonly href: string; readonly label: string };
+};
+
+const { eyebrow, title, description, parent } = Astro.props;
+---
+
+<header class="page-hero">
+  {
+    parent && (
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">home</a> / <a href={parent.href}>{parent.label}</a> / current
+      </nav>
+    )
+  }
+  <span class="eyebrow page-eyebrow">{eyebrow}</span>
+  <h1>{title}</h1>
+  <p class="lead">{description}</p>
+  <slot />
+</header>

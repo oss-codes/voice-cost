@@ -1,0 +1,154 @@
+---
+import {
+  carriers,
+  defaultRealtimeScenario,
+  platforms,
+  realtimeModels,
+  recordingOptions,
+} from "../data/pricing";
+
+const realtimePlatforms = platforms.filter((platform) => !platform.bundledModels);
+---
+
+<form class="calc-shell realtime-calc" data-realtime-calculator>
+  <aside class="usage-panel">
+    <h2>Realtime usage</h2>
+    <label class="field">
+      <span class="field-label">Monthly connected minutes</span>
+      <input name="monthlyMinutes" type="number" min="1" max="10000000" step="100" value={defaultRealtimeScenario.monthlyMinutes} inputmode="numeric" />
+      <span class="field-note">Total call duration, including both sides and silence.</span>
+    </label>
+    <label class="field">
+      <span class="field-label">Average call length</span>
+      <input name="averageCallMinutes" type="number" min="0.1" max="240" step="0.5" value={defaultRealtimeScenario.averageCallMinutes} inputmode="decimal" />
+    </label>
+    <label class="field">
+      <span class="field-label">Caller talk share (%)</span>
+      <input name="callerTalkShare" type="number" min="0" max="100" step="1" value={defaultRealtimeScenario.callerTalkShare * 100} inputmode="numeric" />
+      <span class="field-note">Agent audio is the remaining share. Default: caller 55%, agent 45%.</span>
+    </label>
+    <div class="notice">
+      <strong>why this matters</strong>
+      <span>Realtime APIs charge incoming and generated audio differently. A connected minute is not one flat model minute.</span>
+    </div>
+  </aside>
+
+  <div class="calc-content realtime-config">
+    <div class="realtime-fields">
+      <label class="field">
+        <span class="field-label">Realtime speech model</span>
+        <select name="realtimeModelId">
+          {realtimeModels.map((model) => <option value={model.id} selected={model.id === defaultRealtimeScenario.realtimeModelId}>{model.name}</option>)}
+        </select>
+      </label>
+      <label class="field">
+        <span class="field-label">Platform / orchestration</span>
+        <select name="platformId">
+          {realtimePlatforms.map((platform) => <option value={platform.id} selected={platform.id === defaultRealtimeScenario.platformId}>{platform.name}</option>)}
+        </select>
+      </label>
+      <label class="field">
+        <span class="field-label">Carrier / transport</span>
+        <select name="carrierId">
+          {carriers.map((carrier) => <option value={carrier.id} selected={carrier.id === defaultRealtimeScenario.carrierId}>{carrier.name}</option>)}
+        </select>
+      </label>
+      <label class="field">
+        <span class="field-label">Recording</span>
+        <select name="recordingId">
+          {recordingOptions.map((recording) => <option value={recording.id} selected={recording.id === defaultRealtimeScenario.recordingId}>{recording.name}</option>)}
+        </select>
+      </label>
+    </div>
+
+    <div class="realtime-result" aria-live="polite">
+      <div class="stack-total">
+        <span class="data-label">Estimated monthly total</span>
+        <strong data-output="monthly">$0</strong>
+      </div>
+      <div class="cost-meta"><span data-output="minute">$0/min</span> · <span data-output="call">$0/call</span></div>
+      <ul class="breakdown">
+        <li><span>platform</span><span data-output="platform">$0</span></li>
+        <li><span>caller audio input</span><span data-output="input">$0</span></li>
+        <li><span>agent audio output</span><span data-output="output">$0</span></li>
+        <li><span>carrier</span><span data-output="carrier">$0</span></li>
+        <li><span>recording</span><span data-output="recording">$0</span></li>
+      </ul>
+    </div>
+
+    <div class="model-assumption">
+      <span class="data-label">Model assumption</span>
+      <p data-model-detail></p>
+      <a class="source-badge" data-model-source href={realtimeModels[0].sourceUrl}>official model pricing ↗</a>
+    </div>
+  </div>
+</form>
+
+<script>
+  import { calculateRealtimeVoice } from "../lib/calculate";
+  import { RealtimeScenarioSchema, realtimeModels } from "../data/pricing";
+
+  const form = document.querySelector("[data-realtime-calculator]");
+  const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+  const preciseMoney = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 3, maximumFractionDigits: 4 });
+
+  if (form instanceof HTMLFormElement) {
+    const value = (name: string) => {
+      const field = form.elements.namedItem(name);
+      return field instanceof HTMLInputElement || field instanceof HTMLSelectElement ? field.value : "";
+    };
+    const setText = (key: string, next: string) => {
+      const element = form.querySelector(`[data-output="${key}"]`);
+      if (element instanceof HTMLElement) element.textContent = next;
+    };
+
+    const setInitialState = () => {
+      const params = new URLSearchParams(window.location.search);
+      for (const name of ["monthlyMinutes", "averageCallMinutes", "callerTalkShare", "platformId", "realtimeModelId", "carrierId", "recordingId"]) {
+        const candidate = params.get(name);
+        const field = form.elements.namedItem(name);
+        if (candidate === null || !(field instanceof HTMLInputElement || field instanceof HTMLSelectElement)) continue;
+        if (field instanceof HTMLSelectElement && !Array.from(field.options).some((option) => option.value === candidate)) continue;
+        field.value = candidate;
+      }
+    };
+
+    const render = () => {
+      const parsed = RealtimeScenarioSchema.safeParse({
+        monthlyMinutes: Number(value("monthlyMinutes")),
+        averageCallMinutes: Number(value("averageCallMinutes")),
+        callerTalkShare: Number(value("callerTalkShare")) / 100,
+        platformId: value("platformId"),
+        realtimeModelId: value("realtimeModelId"),
+        carrierId: value("carrierId"),
+        recordingId: value("recordingId"),
+      });
+      if (!parsed.success) return;
+
+      const estimate = calculateRealtimeVoice(parsed.data);
+      const model = realtimeModels.find((candidate) => candidate.id === parsed.data.realtimeModelId);
+      setText("monthly", money.format(estimate.monthly));
+      setText("minute", `${preciseMoney.format(estimate.perMinute)}/connected min`);
+      setText("call", `${money.format(estimate.perCall)}/call`);
+      setText("platform", money.format(estimate.breakdown.platform));
+      setText("input", `${money.format(estimate.breakdown.realtimeInput)} · ${estimate.inputAudioMinutes.toLocaleString("en-US")} min`);
+      setText("output", `${money.format(estimate.breakdown.realtimeOutput)} · ${estimate.outputAudioMinutes.toLocaleString("en-US")} min`);
+      setText("carrier", money.format(estimate.breakdown.carrier));
+      setText("recording", money.format(estimate.breakdown.recording));
+
+      const detail = form.querySelector("[data-model-detail]");
+      const source = form.querySelector("[data-model-source]");
+      if (model && detail instanceof HTMLElement) detail.textContent = model.detail;
+      if (model && source instanceof HTMLAnchorElement) source.href = model.sourceUrl;
+
+      const params = new URLSearchParams();
+      for (const name of ["monthlyMinutes", "averageCallMinutes", "callerTalkShare", "platformId", "realtimeModelId", "carrierId", "recordingId"]) params.set(name, value(name));
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    };
+
+    form.addEventListener("input", render);
+    form.addEventListener("change", render);
+    setInitialState();
+    render();
+  }
+</script>

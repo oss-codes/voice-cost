@@ -1,0 +1,105 @@
+---
+import FaqList from "../../components/FaqList.astro";
+import PageHero from "../../components/PageHero.astro";
+import PricingCalculator from "../../components/PricingCalculator.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { carriers, platforms, VERIFIED_AT } from "../../data/pricing";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const faqs = [
+  {
+    question: "Why can a $0.05/min platform cost more than a $0.14/min platform?",
+    answer:
+      "The $0.05 Vapi rate is a platform fee. STT, LLM, TTS, telephony, and optional recording are added. Bland's published rate bundles STT, LLM, and TTS, so the advertised numbers are not like-for-like until all components are included.",
+  },
+  {
+    question: "Are enterprise discounts included?",
+    answer:
+      "No. This calculator uses public self-serve list pricing. Committed-use, annual-contract, and negotiated enterprise rates can materially reduce the final bill.",
+  },
+  {
+    question: "Does the estimate include engineering and operations?",
+    answer:
+      "Only the self-hosted baseline includes a small infrastructure floor. Engineering, on-call coverage, observability vendors, compliance work, and support are not included. Add them when comparing total cost of ownership.",
+  },
+  {
+    question: "How often is the pricing checked?",
+    answer: `The current snapshot was checked on ${VERIFIED_AT}. Every rate links to a primary provider pricing page so changes can be audited quickly.`,
+  },
+] as const;
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Voice AI Cost Calculator",
+  url: "https://voice.oss.codes/calculator/",
+  applicationCategory: "FinanceApplication",
+  description:
+    "Calculate monthly Voice AI costs across platforms, speech models, LLMs, text-to-speech, telephony, and recording.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Voice AI Cost Calculator"
+  description="Calculate and compare monthly Voice AI costs across Vapi, Retell, Bland, ElevenLabs, Pipecat, LiveKit, and self-hosted stacks."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="interactive calculator"
+    title="The complete Voice AI cost, per minute."
+    description="Configure three stacks side by side. Change usage, platform, speech models, carrier, and recording; the full monthly estimate updates instantly and stays shareable in the URL."
+    parent={{ href: "/calculator/", label: "calculator" }}
+  />
+
+  <section class="section">
+    <nav class="calculator-mode-links" aria-label="Voice AI calculator modes">
+      <span aria-current="page">STT → LLM → TTS pipeline</span>
+      <a href="/tools/realtime-voice-cost-calculator/">realtime speech-to-speech →</a>
+    </nav>
+    <PricingCalculator />
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="what is included"
+      title="Six layers, one honest total"
+      description="The calculator keeps each component visible so an inexpensive platform fee cannot hide an expensive voice, model, carrier, or recording choice."
+    />
+    <div class="data-strip">
+      <div class="data-cell"><span class="data-label">01</span><strong class="data-value">platform</strong></div>
+      <div class="data-cell"><span class="data-label">02</span><strong class="data-value">speech</strong></div>
+      <div class="data-cell"><span class="data-label">03</span><strong class="data-value">LLM</strong></div>
+      <div class="data-cell"><span class="data-label">04–06</span><strong class="data-value">voice + calls</strong></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="primary sources"
+      title="Follow every material rate"
+      description="Provider pricing pages are the authority. This tool normalizes the public figures into one scenario and shows the date of the snapshot."
+    />
+    <ul class="source-list">
+      {
+        platforms.map((platform) => (
+          <li><a class="source-badge" href={platform.sourceUrl}>{platform.name} ↗</a></li>
+        ))
+      }
+      {
+        carriers.slice(0, 3).map((carrier) => (
+          <li><a class="source-badge" href={carrier.sourceUrl}>{carrier.name} ↗</a></li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="calculator FAQ"
+      title="Read this before treating the estimate as a quote"
+      description="Pricing is a moving target and usage shape matters. These boundaries keep the result useful without overstating precision."
+    />
+    <FaqList items={faqs} />
+  </section>
+</BaseLayout>

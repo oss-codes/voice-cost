@@ -1,0 +1,72 @@
+---
+import FaqList from "../../components/FaqList.astro";
+import PageHero from "../../components/PageHero.astro";
+import ToolCard from "../../components/ToolCard.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const faqs = [
+  { question: "Default disclosure", answer: "This is the open state used to verify spacing, text measure, border behavior, and native keyboard interaction." },
+] as const;
+---
+
+<BaseLayout
+  title="Voice OSS Primitive Showcase"
+  description="Internal component and state showcase for the Voice OSS design system."
+  noindex={true}
+>
+  <PageHero
+    eyebrow="design system"
+    title="Primitive showcase."
+    description="A noindex visual regression surface for the reusable states defined in DESIGN.md."
+    parent={{ href: "/system/", label: "system" }}
+  />
+
+  <section class="section">
+    <div class="cluster">
+      <button class="button button-primary" type="button">primary action</button>
+      <button class="button" type="button">outline action</button>
+      <button class="button button-quiet" type="button">quiet action</button>
+      <button class="button" type="button" disabled>disabled action</button>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="metric-tool">
+      <div class="metric-controls">
+        <label class="field"><span class="field-label">Text / number</span><input value="10000" /></label>
+        <label class="field"><span class="field-label">Select</span><select><option>Deepgram Nova-3</option></select></label>
+        <label class="field"><span class="field-label">Disabled</span><input value="bundled" disabled /></label>
+      </div>
+      <div class="metric-results">
+        <span class="data-label">Live result</span>
+        <strong class="metric-primary">$1,008</strong>
+        <p class="metric-explanation">Example result state with supporting context.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="data-strip">
+      <div class="data-cell"><span class="data-label">Neutral</span><strong class="data-value">$0.101</strong></div>
+      <div class="data-cell best"><span class="data-label">Lowest</span><strong class="data-value">$0.074</strong></div>
+      <div class="data-cell"><span class="data-label">Warning</span><strong class="data-value warning">stale</strong></div>
+      <div class="data-cell"><span class="data-label">Negative</span><strong class="data-value negative">+$240</strong></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="tool-grid">
+      <ToolCard index="01" title="Tool card" description="Reusable route card with a real destination and hover state." href="/tools/" />
+      <div class="tool-card" aria-label="Loading card"><span class="card-index">02</span><h3>Loading…</h3><p>State for deferred data.</p></div>
+      <div class="tool-card" aria-label="Empty card"><span class="card-index">03</span><h3>No results</h3><p>Adjust the filters and try again.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <ul class="source-list">
+      <li><a class="source-badge" href="/methodology/">current source ↗</a></li>
+      <li><span class="source-badge">verified 2026-07-17</span></li>
+    </ul>
+    <FaqList items={faqs} />
+  </section>
+</BaseLayout>

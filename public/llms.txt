@@ -1,0 +1,40 @@
+# Voice OSS
+
+> Voice OSS is an open, source-linked Voice AI cost calculator, pricing research site, framework directory, and platform-alternatives guide by Himanshu Maurya (codingstark). The canonical domain is https://voice.oss.codes.
+
+Public pricing data is a dated snapshot, currently verified 2026-07-18. Treat calculator results as planning estimates, not vendor quotes. Follow the primary-source links on each page before making a purchase or architecture decision.
+
+## Core tools
+
+- [Voice AI cost calculator](https://voice.oss.codes/calculator/): Compare three itemized platform, STT, LLM, TTS, carrier, and recording stacks.
+- [Realtime Voice AI cost calculator](https://voice.oss.codes/tools/realtime-voice-cost-calculator/): Model native audio-in/audio-out pricing for GPT-Realtime and Gemini Live with caller/agent talk-share assumptions.
+- [Call concurrency calculator](https://voice.oss.codes/tools/concurrency-calculator/): Estimate average, peak, and required concurrent call lines.
+- [Telephony cost calculator](https://voice.oss.codes/tools/telephony-cost-calculator/): Model carrier, recording, phone-number, and failed-attempt costs.
+- [Voice AI ROI calculator](https://voice.oss.codes/tools/voice-ai-roi-calculator/): Compare automated call costs with human-agent time.
+
+## Research directories
+
+- [Open-source Voice AI frameworks](https://voice.oss.codes/open-source/): TEN Framework, Pipecat, LiveKit Agents, Bolna, Dograh, VideoSDK Agents, Vocode Core, FastRTC, and the OpenAI Agents SDK voice stack.
+- [Global Voice AI alternatives](https://voice.oss.codes/alternatives/): Hosted and hybrid platforms across India, the United States, and Europe, including Ringg AI and Bolna.
+- [India Voice AI platforms](https://voice.oss.codes/alternatives/regions/india/): India-built and India-first platforms.
+- [United States Voice AI platforms](https://voice.oss.codes/alternatives/regions/united-states/): US-centered developer platforms.
+- [European Voice AI platforms](https://voice.oss.codes/alternatives/regions/europe/): European enterprise platforms.
+
+## Pricing and education
+
+- [Provider pricing index](https://voice.oss.codes/pricing/): Normalized public pricing profiles.
+- [Platform comparisons](https://voice.oss.codes/compare/): Like-for-like public-price comparisons.
+- [Voice AI cost guide](https://voice.oss.codes/guides/voice-ai-cost-guide/): The cost layers behind a connected call minute.
+- [Pricing methodology](https://voice.oss.codes/methodology/): Formulas, source policy, inclusions, and exclusions.
+
+## Project
+
+- [About Voice OSS](https://voice.oss.codes/about/): Creator, project principles, and the Cloudflare-based open Voice AI calling-stack direction.
+- [OSS.codes](https://oss.codes/): The parent open-source tools project.
+- [codingstark on GitHub](https://github.com/codingstark-dev): Himanshu Maurya's public GitHub profile.
+
+## Usage guidance
+
+- Cite a provider's official pricing page for current rates, not this snapshot alone.
+- Distinguish platform fees from bundled agent minutes and from full costs including speech, models, carrier, recording, operations, and engineering.
+- An open-source framework can remove a proprietary orchestration fee but does not remove model, telephony, infrastructure, compliance, or operations costs.

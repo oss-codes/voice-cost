@@ -1,0 +1,81 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  name: "About Voice OSS",
+  description: "Voice OSS is an open Voice AI economics and infrastructure research project by Himanshu Maurya (codingstark).",
+  mainEntity: {
+    "@type": "Person",
+    name: "Himanshu Maurya",
+    alternateName: "codingstark",
+    url: "https://github.com/codingstark-dev",
+  },
+};
+---
+
+<BaseLayout
+  title="About Voice OSS and Himanshu Maurya"
+  description="Voice OSS is an open Voice AI economics, directory, and infrastructure research project by Himanshu Maurya (codingstark), creator of OSS.codes."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="about the project"
+    title="Open numbers. Open runtime next."
+    description="Voice OSS makes the economics of AI calling inspectable today while documenting the open frameworks and infrastructure paths that can make the runtime more ownable tomorrow."
+    parent={{ href: "/about/", label: "about" }}
+  />
+
+  <section class="section">
+    <SectionHead
+      label="creator"
+      title="Built by Himanshu Maurya"
+      description="Himanshu Maurya, also known as codingstark, creates OSS.codes and builds practical open-source tools for developers."
+    />
+    <div class="prose">
+      <p>
+        Voice OSS is the public research and economics layer for his work on open Voice AI. It
+        combines source-linked pricing, reproducible calculators, framework discovery, and honest
+        ownership trade-offs rather than presenting one vendor's rate as the whole cost.
+      </p>
+      <p>
+        Himanshu is also working toward an open-source Voice AI calling stack designed around
+        Cloudflare's edge platform. The direction explores realtime media, Workers, Durable Objects,
+        WebSockets, and open agent orchestration; it is active build work, not a claim that the full
+        calling platform is already released.
+      </p>
+      <p><a href="https://github.com/codingstark-dev">Follow codingstark on GitHub →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="Cloudflare direction"
+      title="Why an edge-native call stack is interesting"
+      description="Voice is a realtime distributed-systems problem: media, model streams, call state, events, recordings, tools, and failures all need coordination."
+    />
+    <div class="data-strip">
+      <div class="data-cell best"><span class="data-label">media</span><strong class="data-value compact-value">Cloudflare Realtime</strong><span class="cost-meta">WebRTC and SFU building blocks</span></div>
+      <div class="data-cell"><span class="data-label">compute</span><strong class="data-value compact-value">Workers</strong><span class="cost-meta">edge request and tool execution</span></div>
+      <div class="data-cell"><span class="data-label">state</span><strong class="data-value compact-value">Durable Objects</strong><span class="cost-meta">call coordination and WebSockets</span></div>
+      <div class="data-cell"><span class="data-label">principle</span><strong class="data-value compact-value">open adapters</strong><span class="cost-meta">models and carriers stay replaceable</span></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="references"
+      title="Inspect the primitives"
+      description="These links describe the Cloudflare capabilities informing the architecture direction."
+    />
+    <ul class="source-list">
+      <li><a class="source-badge" href="https://developers.cloudflare.com/realtime/">Cloudflare Realtime ↗</a></li>
+      <li><a class="source-badge" href="https://developers.cloudflare.com/workers/">Cloudflare Workers ↗</a></li>
+      <li><a class="source-badge" href="https://developers.cloudflare.com/durable-objects/">Durable Objects ↗</a></li>
+      <li><a class="source-badge" href="/open-source/">voice frameworks →</a></li>
+    </ul>
+  </section>
+</BaseLayout>

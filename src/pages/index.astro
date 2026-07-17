@@ -1,0 +1,220 @@
+---
+import SectionHead from "../components/SectionHead.astro";
+import ToolCard from "../components/ToolCard.astro";
+import { comparisons, defaultScenario, platforms, VERIFIED_AT } from "../data/pricing";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { calculateStack } from "../lib/calculate";
+
+const featured = ["vapi", "retell", "bland-start"] as const;
+const estimates = featured.map((platformId) => ({
+  platform: platforms.find((platform) => platform.id === platformId),
+  estimate: calculateStack({ ...defaultScenario, platformId }),
+}));
+const tools = [
+  {
+    title: "Stack cost calculator",
+    description: "Compare three configurable stacks with itemized platform, model, carrier, and recording costs.",
+    href: "/calculator/",
+  },
+  {
+    title: "Realtime voice calculator",
+    description: "Estimate native audio-in/audio-out costs across GPT-Realtime and Gemini Live models.",
+    href: "/tools/realtime-voice-cost-calculator/",
+  },
+  {
+    title: "Concurrency planner",
+    description: "Turn monthly calls, handle time, and peak traffic into the number of lines you need.",
+    href: "/tools/concurrency-calculator/",
+  },
+  {
+    title: "Telephony calculator",
+    description: "Estimate inbound and outbound carrier spend with call recording and phone numbers.",
+    href: "/tools/telephony-cost-calculator/",
+  },
+  {
+    title: "Voice AI ROI",
+    description: "Compare automated call costs against fully loaded human-agent time.",
+    href: "/tools/voice-ai-roi-calculator/",
+  },
+  {
+    title: "Provider pricing index",
+    description: "Browse source-linked pricing snapshots and understand what each advertised rate includes.",
+    href: "/pricing/",
+  },
+  {
+    title: "Voice AI cost guide",
+    description: "Learn the six layers that determine real cost per connected minute.",
+    href: "/guides/voice-ai-cost-guide/",
+  },
+  {
+    title: "OSS framework directory",
+    description: "Compare TEN Framework, Pipecat, LiveKit Agents, Bolna, Dograh, and other open runtimes.",
+    href: "/open-source/",
+  },
+  {
+    title: "Global platform alternatives",
+    description: "Find Voice AI platforms across India, the United States, and Europe, with official sources.",
+    href: "/alternatives/",
+  },
+] as const;
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Voice OSS",
+  url: "https://voice.oss.codes/",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Any",
+  description:
+    "Open Voice AI pricing calculators, provider comparisons, and planning tools with source-linked data.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Voice OSS — Open Voice AI pricing calculators"
+  description="Compare Voice AI platforms, model stacks, telephony, concurrency, and ROI with open formulas and source-linked pricing data."
+  structuredData={structuredData}
+>
+  <section class="hero">
+    <div>
+      <span class="eyebrow">open Voice AI economics</span>
+      <h1>Voice AI costs, <em>decoded.</em></h1>
+      <p class="lead">
+        Build a real per-minute estimate across platform, speech, intelligence, carrier, and
+        recording. Every number is inspectable. Every source is public.
+      </p>
+      <div class="cluster hero-actions">
+        <a class="button button-primary" href="/calculator/">run the calculator →</a>
+        <a class="button" href="/guides/voice-ai-cost-guide/">read the cost guide</a>
+      </div>
+    </div>
+
+    <div class="signal-console" aria-label="Example Voice AI cost signal">
+      <div class="console-bar">
+        <span class="console-dot"></span><span class="console-dot"></span
+        ><span class="console-dot"></span><span>live_cost_trace.log</span>
+      </div>
+      <div class="signal-stage">
+        <svg viewBox="0 0 600 180" role="img" aria-label="Stylized voice waveform">
+          <path
+            class="signal-path"
+            d="M4 94h55l18-38 27 77 34-122 31 91 25-56 36 93 31-58 42 19 30-64 32 102 39-92 33 70 25-47 24 31h80"
+            fill="none"
+            stroke="var(--signal)"
+            stroke-width="3"
+            vector-effect="non-scaling-stroke"
+          />
+        </svg>
+        <div class="live-readout">
+          <div><strong>10K</strong><span>minutes / month</span></div>
+          <div><strong>5.0</strong><span>avg call minutes</span></div>
+          <div><strong>{estimates.length}</strong><span>stacks compared</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="quick-estimate">
+    <SectionHead
+      label="01 / live sample"
+      title="What 10,000 outbound minutes can cost"
+      description="Same Deepgram, GPT-5 mini, integrated voice, and Twilio outbound assumptions. Bundled platforms include their speech and model layers."
+    />
+    <div class="data-strip" id="quick-estimate">
+      {
+        estimates.map(({ platform, estimate }, index) => (
+          platform && (
+            <div class:list={["data-cell", { best: index === 0 }]}>
+              <span class="data-label">{platform.name}</span>
+              <strong class="data-value">${estimate.monthly.toLocaleString("en-US")}</strong>
+              <span class="cost-meta">${estimate.perMinute.toFixed(4)}/connected min</span>
+            </div>
+          )
+        ))
+      }
+      <div class="data-cell">
+        <span class="data-label">Data status</span>
+        <strong class="data-value">current</strong>
+        <span class="cost-meta">verified {VERIFIED_AT}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="02 / tools"
+      title="Plan the whole call, not one line item"
+      description="Useful calculators for the decisions that happen before a Voice AI launch: stack selection, carrier spend, burst capacity, and business case."
+    />
+    <div class="tool-grid">
+      {tools.map((tool, index) => <ToolCard index={`0${index + 1}`} {...tool} />)}
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="03 / providers"
+      title="Published rates, with context"
+      description="Advertised per-minute rates are rarely equivalent. These profiles explain whether the price includes infrastructure, STT, TTS, LLMs, telephony, or none of them."
+    />
+    <div class="provider-grid">
+      {
+        platforms.slice(0, 6).map((platform, index) => (
+          <a class="provider-card" href={`/pricing/${platform.slug}/`}>
+            <span class="card-index">{String(index + 1).padStart(2, "0")}</span>
+            <span class="card-arrow" aria-hidden="true">↗</span>
+            <h3>{platform.name}</h3>
+            <p>{platform.summary}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="04 / head-to-head"
+      title="Compare the choices people actually shortlist"
+      description="Each page explains the pricing structure, ownership trade-off, and a like-for-like 10,000-minute scenario."
+    />
+    <div class="comparison-grid">
+      {
+        comparisons.slice(0, 3).map((comparison, index) => (
+          <a class="comparison-card" href={`/compare/${comparison.slug}/`}>
+            <span class="card-index">{String(index + 1).padStart(2, "0")}</span>
+            <span class="card-arrow" aria-hidden="true">↗</span>
+            <h3>{comparison.title}</h3>
+            <p>{comparison.description}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="05 / open stack"
+      title="Economics now. Open call infrastructure next."
+      description="Voice OSS is created by Himanshu Maurya (codingstark), who is also working toward an open-source Voice AI calling stack designed around Cloudflare's edge platform."
+    />
+    <div class="creator-panel">
+      <div>
+        <span class="data-label">creator</span>
+        <h3>Himanshu Maurya <span>(codingstark)</span></h3>
+        <p>Builder of OSS.codes and practical open-source developer tools.</p>
+      </div>
+      <div>
+        <span class="data-label">active direction</span>
+        <p>
+          Realtime media, Workers, Durable Objects, WebSockets, and open agent adapters on a
+          Cloudflare-based stack. This site is the research and cost-modeling layer for that work.
+        </p>
+        <div class="cluster">
+          <a class="button button-primary" href="/about/">read the project note →</a>
+          <a class="button" href="https://github.com/codingstark-dev">follow on GitHub ↗</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

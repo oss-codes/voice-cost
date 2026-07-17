@@ -1,0 +1,38 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { comparisons } from "../../data/pricing";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Voice AI Platform Comparisons"
+  description="Head-to-head Voice AI platform comparisons for Vapi, Retell, Bland, ElevenLabs, LiveKit, and Pipecat."
+>
+  <PageHero
+    eyebrow="head-to-head"
+    title="Compare the stack, not the headline."
+    description="Side-by-side pricing models, ownership trade-offs, and normalized cost examples for the Voice AI platforms teams actually shortlist."
+    parent={{ href: "/compare/", label: "compare" }}
+  />
+
+  <section class="section">
+    <SectionHead
+      label="comparison library"
+      title="Choose a decision"
+      description="Every comparison uses the same 10,000-minute baseline, then explains where a platform's architecture or pricing model changes the answer."
+    />
+    <div class="comparison-grid">
+      {
+        comparisons.map((comparison, index) => (
+          <a class="comparison-card" href={`/compare/${comparison.slug}/`}>
+            <span class="card-index">{String(index + 1).padStart(2, "0")}</span>
+            <span class="card-arrow" aria-hidden="true">↗</span>
+            <h3>{comparison.title}</h3>
+            <p>{comparison.description}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

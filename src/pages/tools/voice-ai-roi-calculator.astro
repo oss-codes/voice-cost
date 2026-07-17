@@ -1,0 +1,126 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Voice AI ROI Calculator"
+  description="Estimate monthly Voice AI savings versus human call handling using call volume, handle time, labor cost, automation rate, and AI cost per minute."
+>
+  <PageHero
+    eyebrow="business case"
+    title="Model the work the agent can actually absorb."
+    description="A Voice AI ROI case is not 100% automation. Use your real handle time, labor cost, expected containment, and all-in AI minute to estimate the monthly savings boundary."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="metric-tool" data-roi>
+      <div class="metric-controls">
+        <label class="field">
+          <span class="field-label">Calls per month</span>
+          <input name="calls" type="number" min="1" max="10000000" value="2000" />
+        </label>
+        <label class="field">
+          <span class="field-label">Average call minutes</span>
+          <input name="minutes" type="number" min="0.1" max="240" step="0.5" value="5" />
+        </label>
+        <label class="field">
+          <span class="field-label">Fully loaded human cost / hour</span>
+          <input name="humanCost" type="number" min="1" max="1000" step="1" value="28" />
+        </label>
+        <label class="field">
+          <span class="field-label">All-in Voice AI cost / minute</span>
+          <input name="aiCost" type="number" min="0.001" max="10" step="0.01" value="0.12" />
+        </label>
+        <label class="field">
+          <span class="field-label">Automation / containment rate</span>
+          <input name="automation" type="number" min="1" max="100" step="1" value="70" />
+          <span class="field-note">Share of call minutes resolved without a human.</span>
+        </label>
+      </div>
+      <div class="metric-results" aria-live="polite">
+        <span class="data-label">Modeled monthly savings</span>
+        <strong class="metric-primary" data-savings>$0</strong>
+        <p class="metric-explanation">
+          Automated minutes: <strong data-automated>0</strong>. Human cost avoided:
+          <strong data-avoided>$0</strong>. Voice AI spend: <strong data-ai>$0</strong>.
+        </p>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="interpretation"
+      title="Savings are only real when outcomes hold"
+      description="Containment, conversion, satisfaction, compliance, and transfer quality matter more than the theoretical minute delta."
+    />
+    <div class="prose">
+      <p>
+        Add implementation, QA, supervision, escalation, and ongoing tuning before treating this as
+        a full business case. The cleanest pilot measures a narrow call type and compares successful
+        outcomes, not only handled minutes.
+      </p>
+      <p>
+        Use the <a href="/calculator/">stack calculator</a> to replace the default all-in AI rate
+        with a number built from your actual providers.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { z } from "zod";
+
+  import { estimateHumanSavings } from "../../lib/calculate";
+
+  const form = document.querySelector("[data-roi]");
+  const InputSchema = z.object({
+    callsPerMonth: z.number().int().min(1).max(10_000_000),
+    averageMinutes: z.number().min(0.1).max(240),
+    humanHourlyCost: z.number().min(1).max(1_000),
+    aiCostPerMinute: z.number().min(0.001).max(10),
+    automationPercent: z.number().min(1).max(100),
+  });
+  const money = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
+
+  if (form instanceof HTMLFormElement) {
+    const value = (name: string) => {
+      const field = form.elements.namedItem(name);
+      return field instanceof HTMLInputElement ? Number(field.value) : Number.NaN;
+    };
+    const output = (selector: string, text: string) => {
+      const element = form.querySelector(selector);
+      if (element instanceof HTMLElement) element.textContent = text;
+    };
+    const render = () => {
+      const parsed = InputSchema.safeParse({
+        callsPerMonth: value("calls"),
+        averageMinutes: value("minutes"),
+        humanHourlyCost: value("humanCost"),
+        aiCostPerMinute: value("aiCost"),
+        automationPercent: value("automation"),
+      });
+      if (!parsed.success) return;
+      const result = estimateHumanSavings({
+        callsPerMonth: parsed.data.callsPerMonth,
+        averageMinutes: parsed.data.averageMinutes,
+        humanHourlyCost: parsed.data.humanHourlyCost,
+        aiCostPerMinute: parsed.data.aiCostPerMinute,
+        automationRate: parsed.data.automationPercent / 100,
+      });
+      output("[data-savings]", money.format(result.monthlySavings));
+      output("[data-automated]", Math.round(result.automatedMinutes).toLocaleString("en-US"));
+      output("[data-avoided]", money.format(result.humanCostAvoided));
+      output("[data-ai]", money.format(result.aiCost));
+    };
+    form.addEventListener("input", render);
+    render();
+  }
+</script>

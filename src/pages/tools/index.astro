@@ -1,0 +1,57 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import ToolCard from "../../components/ToolCard.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const tools = [
+  {
+    title: "Voice AI stack cost",
+    description: "Compare platform, STT, LLM, TTS, telephony, and recording across three stacks.",
+    href: "/calculator/",
+  },
+  {
+    title: "Realtime voice cost",
+    description: "Price native speech-to-speech models with separate caller and agent audio.",
+    href: "/tools/realtime-voice-cost-calculator/",
+  },
+  {
+    title: "Concurrency planner",
+    description: "Convert call volume and traffic shape into peak simultaneous call capacity.",
+    href: "/tools/concurrency-calculator/",
+  },
+  {
+    title: "Telephony cost",
+    description: "Estimate carrier, recording, number, and failed-attempt charges.",
+    href: "/tools/telephony-cost-calculator/",
+  },
+  {
+    title: "Voice AI ROI",
+    description: "Compare automated minutes with the fully loaded cost of human handling.",
+    href: "/tools/voice-ai-roi-calculator/",
+  },
+] as const;
+---
+
+<BaseLayout
+  title="Free Voice AI Calculators and Planning Tools"
+  description="Free Voice AI tools for stack cost, telephony, call concurrency, capacity planning, and ROI."
+>
+  <PageHero
+    eyebrow="open calculators"
+    title="Tools for the call behind the demo."
+    description="Forecast the parts that become expensive after a Voice AI prototype meets real traffic: component costs, phone minutes, burst capacity, and human escalation economics."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <SectionHead
+      label="toolkit"
+      title="Five calculations before launch"
+      description="Each tool uses visible assumptions, responds instantly in the browser, and links back to its pricing or formula source."
+    />
+    <div class="tool-grid">
+      {tools.map((tool, index) => <ToolCard index={`0${index + 1}`} {...tool} />)}
+    </div>
+  </section>
+</BaseLayout>

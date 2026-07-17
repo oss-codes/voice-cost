@@ -1,0 +1,15 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Page not found" description="The requested Voice OSS page was not found." noindex={true}>
+  <section class="page-hero">
+    <span class="eyebrow">404 / route missing</span>
+    <h1>This path has no signal.</h1>
+    <p class="lead">Return to the calculator or browse the open pricing index.</p>
+    <div class="cluster hero-actions">
+      <a class="button button-primary" href="/calculator/">open calculator →</a>
+      <a class="button" href="/pricing/">browse pricing</a>
+    </div>
+  </section>
+</BaseLayout>

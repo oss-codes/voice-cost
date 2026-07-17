@@ -1,0 +1,106 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import {
+  carriers,
+  llmModels,
+  platforms,
+  realtimeModels,
+  recordingOptions,
+  sttModels,
+  ttsModels,
+  VERIFIED_AT,
+} from "../../data/pricing";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Voice AI Pricing Methodology and Sources"
+  description="Inspect the formulas, assumptions, source URLs, and verification date behind Voice OSS calculators and comparison pages."
+>
+  <PageHero
+    eyebrow="open methodology"
+    title="Every estimate should be auditable."
+    description={`The data catalog is a dated public-price snapshot, verified ${VERIFIED_AT}. Formulas are intentionally small, visible, and reproducible.`}
+    parent={{ href: "/methodology/", label: "methodology" }}
+  />
+
+  <section class="section">
+    <SectionHead
+      label="cost model"
+      title="Monthly cost is the sum of active layers"
+      description="Bundled platforms zero out separate STT, LLM, and TTS layers. Plan-based platforms apply included minutes before overage."
+    />
+    <article class="prose">
+      <p>
+        <code>monthly = platform + STT + LLM + TTS + carrier + recording</code>
+      </p>
+      <p>
+        <code>platform = base fee + max(0, minutes − included minutes) × overage rate</code>
+      </p>
+      <p>
+        <code>per minute = monthly total ÷ connected minutes</code>
+      </p>
+      <p>
+        <code>per call = per-minute total × average handle time</code>
+      </p>
+      <p>
+        Public list prices are stored in USD before tax. Free trials, one-time credits, negotiated
+        enterprise discounts, annual commitments, and temporary promotions are excluded unless
+        they are part of the standard pricing structure itself.
+      </p>
+
+      <h2>Conversation model estimates</h2>
+      <p>
+        LLM providers usually bill tokens rather than connected minutes. The calculator uses
+        platform-published conversation-minute estimates to make fast side-by-side comparisons.
+        This is the least portable part of the model because prompt size, tool definitions,
+        history, caching, turn count, and output length vary by application.
+      </p>
+      <p>
+        For production budgeting, replay representative transcripts against the chosen model and
+        measure real input, cached-input, output, and reasoning tokens. Replace the normalized
+        estimate with that workload result.
+      </p>
+
+      <h2>Bundled platform handling</h2>
+      <p>
+        Bland Start and ElevenAgents are represented as bundled speech-engine minutes: separate
+        STT, LLM, and TTS selections are disabled and contribute zero additional cost. Telephony
+        and recording remain separate because public pricing treats them independently.
+      </p>
+
+      <h2>Self-hosted baseline</h2>
+      <p>
+        The self-hosted entry is a small infrastructure floor, not a total-cost claim. It excludes
+        engineering, support, observability vendors, compliance, networking variance, and idle
+        capacity. Treat it as a prompt to build a real infrastructure model, not proof that
+        self-hosting is cheaper.
+      </p>
+
+      <h2>Change policy</h2>
+      <p>
+        A pricing update must change the rate, primary source, and verification date together.
+        Comparison pages are generated from the shared catalog so a corrected rate propagates to
+        the calculator, provider profiles, and head-to-head examples in the same build.
+      </p>
+    </article>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="source registry"
+      title="Primary pricing pages"
+      description="Follow the provider page for the final word. Pricing can change without versioned APIs or advance notice."
+    />
+    <ul class="source-list">
+      {
+        [...platforms, ...sttModels, ...llmModels, ...ttsModels, ...realtimeModels, ...carriers, ...recordingOptions]
+          .filter((item, index, all) => all.findIndex((candidate) => candidate.sourceUrl === item.sourceUrl) === index)
+          .map((item) => (
+            <li><a class="source-badge" href={item.sourceUrl}>{item.name} ↗</a></li>
+          ))
+      }
+    </ul>
+  </section>
+</BaseLayout>

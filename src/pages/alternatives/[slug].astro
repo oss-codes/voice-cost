@@ -1,0 +1,103 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { alternatives, DIRECTORY_VERIFIED_AT, frameworks } from "../../data/directory";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export function getStaticPaths() {
+  return alternatives.map((alternative) => ({
+    params: { slug: alternative.slug },
+    props: { alternative },
+  }));
+}
+
+const { alternative } = Astro.props;
+const featuredFrameworks = frameworks.slice(0, 3);
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: `${alternative.name} alternatives and pricing model`,
+  description: alternative.summary,
+  dateModified: DIRECTORY_VERIFIED_AT,
+  author: { "@type": "Organization", name: "OSS.codes" },
+};
+---
+
+<BaseLayout
+  title={`${alternative.name} Alternatives, Pricing, and Open-Source Options`}
+  description={`${alternative.summary} See public pricing structure, regional fit, evaluation questions, and open-source alternatives.`}
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="platform alternative profile"
+    title={`${alternative.name}.`}
+    description={alternative.summary}
+    parent={{ href: "/alternatives/", label: "alternatives" }}
+  >
+    <div class="cluster hero-actions">
+      <a class="button button-primary" href={alternative.pricingUrl}>check current pricing →</a>
+      <a class="button" href={alternative.sourceUrl}>visit platform ↗</a>
+    </div>
+  </PageHero>
+
+  <section class="section">
+    <SectionHead
+      label="public snapshot"
+      title="Understand the commercial shape"
+      description={`Vendor pages checked ${DIRECTORY_VERIFIED_AT}. Pricing, availability, and included components can change without notice.`}
+    />
+    <div class="data-strip">
+      <div class="data-cell best"><span class="data-label">market</span><strong class="data-value compact-value">{alternative.market}</strong></div>
+      <div class="data-cell"><span class="data-label">delivery</span><strong class="data-value compact-value">{alternative.model}</strong></div>
+      <div class="data-cell"><span class="data-label">price signal</span><strong class="data-value compact-value">{alternative.priceNote}</strong></div>
+      <div class="data-cell"><span class="data-label">checked</span><strong class="data-value compact-value">{DIRECTORY_VERIFIED_AT}</strong></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="decision"
+      title={`When to shortlist ${alternative.name}`}
+      description="A provider page should narrow a discovery call, not replace a technical proof of concept or contract review."
+    />
+    <div class="prose">
+      <h2>Best fit</h2>
+      <p>{alternative.bestFor}</p>
+      <h2>Questions to ask</h2>
+      <ul>
+        <li>Does the quoted minute include STT, TTS, LLM, telephony, recording, and failed attempts?</li>
+        <li>Which countries, number types, languages, and transfer destinations are production-supported?</li>
+        <li>What concurrency, rate limits, data residency, retention, and support terms apply?</li>
+        <li>Can you bring your own speech, model, SIP carrier, and phone numbers without markup?</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="open-source path"
+      title={`Open alternatives to ${alternative.name}`}
+      description="Self-hosting changes the bill and the ownership boundary. These starting points expose more of the runtime while leaving model and carrier costs intact."
+    />
+    <div class="comparison-grid">
+      {
+        featuredFrameworks.map((framework, index) => (
+          <a class="comparison-card" href={`/open-source/${framework.slug}/`}>
+            <span class="card-index">0{index + 1}</span>
+            <span class="card-arrow" aria-hidden="true">↗</span>
+            <h3>{framework.name}</h3>
+            <p>{framework.bestFor}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section">
+    <ul class="source-list">
+      <li><a class="source-badge" href={alternative.pricingUrl}>current pricing ↗</a></li>
+      <li><a class="source-badge" href={alternative.sourceUrl}>official site ↗</a></li>
+      <li><a class="source-badge" href="/calculator/">normalized calculator →</a></li>
+    </ul>
+  </section>
+</BaseLayout>

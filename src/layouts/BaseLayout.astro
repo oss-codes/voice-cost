@@ -1,0 +1,65 @@
+---
+import SiteFooter from "../components/SiteFooter.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import "../styles/global.css";
+
+type Props = {
+  readonly title: string;
+  readonly description: string;
+  readonly noindex?: boolean;
+  readonly structuredData?: Readonly<Record<string, unknown>>;
+};
+
+const { title, description, noindex = false, structuredData } = Astro.props;
+const site = Astro.site ?? new URL("https://voice.oss.codes");
+const canonical = new URL(Astro.url.pathname, site);
+const fullTitle = title.includes("Voice OSS") ? title : `${title} | Voice OSS`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content="Himanshu Maurya (codingstark)" />
+    <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large"} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Voice OSS" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL("/og.png", site)} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Voice OSS — Voice AI costs, decoded" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={new URL("/og.png", site)} />
+    <meta name="twitter:image:alt" content="Voice OSS — Voice AI costs, decoded" />
+    {
+      structuredData && (
+        <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+      )
+    }
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="shell">
+      <SiteHeader path={Astro.url.pathname} />
+      <main id="main">
+        <slot />
+      </main>
+      <SiteFooter />
+    </div>
+  </body>
+</html>

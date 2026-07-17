@@ -1,0 +1,17 @@
+---
+type Props = {
+  readonly index: string;
+  readonly title: string;
+  readonly description: string;
+  readonly href: string;
+};
+
+const { index, title, description, href } = Astro.props;
+---
+
+<a class="tool-card" href={href}>
+  <span class="card-index">{index}</span>
+  <span class="card-arrow" aria-hidden="true">↗</span>
+  <h3>{title}</h3>
+  <p>{description}</p>
+</a>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <title>Voice AI costs, decoded</title>
+  <rect width="1200" height="630" fill="#0a0a0a"/>
+  <g stroke="#24251f" stroke-width="1">
+    <path d="M0 90h1200M0 180h1200M0 270h1200M0 360h1200M0 450h1200M0 540h1200"/>
+    <path d="M100 0v630M200 0v630M300 0v630M400 0v630M500 0v630M600 0v630M700 0v630M800 0v630M900 0v630M1000 0v630M1100 0v630"/>
+  </g>
+  <text x="88" y="110" fill="#7a7a72" font-family="monospace" font-size="24">~ voice.oss.codes main ❯</text>
+  <text x="88" y="260" fill="#e8e8e2" font-family="monospace" font-size="72" letter-spacing="-5">Voice AI costs,</text>
+  <text x="88" y="348" fill="#c8f55a" font-family="monospace" font-size="72" letter-spacing="-5">decoded.</text>
+  <path d="M90 475h105l25-55 35 105 52-165 46 124 35-80 52 120 38-70 62 21 40-82 45 130 58-125 45 100 38-66 34 43h125" fill="none" stroke="#c8f55a" stroke-width="5"/>
+  <text x="88" y="584" fill="#7a7a72" font-family="monospace" font-size="22">open pricing data · calculators · comparisons · guides</text>
+</svg>

@@ -1,0 +1,342 @@
+---
+import {
+  carriers,
+  defaultScenario,
+  llmModels,
+  platforms,
+  recordingOptions,
+  sttModels,
+  ttsModels,
+} from "../data/pricing";
+
+const stacks = [
+  { key: "a", platformId: "vapi", label: "Stack A" },
+  { key: "b", platformId: "retell", label: "Stack B" },
+  { key: "c", platformId: "bland-start", label: "Stack C" },
+] as const;
+---
+
+<form class="calc-shell" data-calculator>
+  <aside class="usage-panel">
+    <h2>Usage profile</h2>
+    <label class="field">
+      <span class="field-label">Monthly call minutes</span>
+      <input
+        name="monthlyMinutes"
+        type="number"
+        min="1"
+        max="10000000"
+        step="100"
+        value={defaultScenario.monthlyMinutes}
+        inputmode="numeric"
+      />
+      <span class="field-note">Connected minutes across all calls.</span>
+    </label>
+    <label class="field">
+      <span class="field-label">Average call length</span>
+      <input
+        name="averageCallMinutes"
+        type="number"
+        min="0.1"
+        max="240"
+        step="0.5"
+        value={defaultScenario.averageCallMinutes}
+        inputmode="decimal"
+      />
+      <span class="field-note">Used to estimate cost per completed call.</span>
+    </label>
+    <div class="notice">
+      <strong>snapshot</strong>
+      <span>USD pre-tax. Public list prices, verified 2026-07-17. Enterprise discounts excluded.</span>
+    </div>
+    <div class="calc-actions">
+      <button class="button button-primary" type="button" data-copy>copy estimate link</button>
+      <a class="button" href="/methodology/">inspect formulas</a>
+    </div>
+  </aside>
+
+  <div class="calc-content">
+    <div class="stack-grid">
+      {
+        stacks.map((stack) => (
+          <fieldset class="stack-panel" data-stack={stack.key}>
+            <legend class="sr-only">{stack.label}</legend>
+            <h2>{stack.label}</h2>
+            <div class="stack-status" data-output={`${stack.key}-status`} aria-live="polite" />
+
+            <label class="field">
+              <span class="field-label">Platform</span>
+              <select name={`${stack.key}-platformId`}>
+                {platforms.map((platform) => (
+                  <option value={platform.id} selected={platform.id === stack.platformId}>
+                    {platform.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Speech to text</span>
+              <select name={`${stack.key}-sttId`} data-model-field>
+                {sttModels.map((model) => (
+                  <option value={model.id} selected={model.id === defaultScenario.sttId}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Language model</span>
+              <select name={`${stack.key}-llmId`} data-model-field>
+                {llmModels.map((model) => (
+                  <option value={model.id} selected={model.id === defaultScenario.llmId}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Text to speech</span>
+              <select name={`${stack.key}-ttsId`} data-model-field>
+                {ttsModels.map((model) => (
+                  <option value={model.id} selected={model.id === defaultScenario.ttsId}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Carrier / transport</span>
+              <select name={`${stack.key}-carrierId`}>
+                {carriers.map((carrier) => (
+                  <option value={carrier.id} selected={carrier.id === defaultScenario.carrierId}>
+                    {carrier.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Recording</span>
+              <select name={`${stack.key}-recordingId`}>
+                {recordingOptions.map((recording) => (
+                  <option
+                    value={recording.id}
+                    selected={recording.id === defaultScenario.recordingId}
+                  >
+                    {recording.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div class="stack-result">
+              <div class="stack-total">
+                <span class="data-label">Monthly</span>
+                <strong data-output={`${stack.key}-monthly`}>$0</strong>
+              </div>
+              <div class="cost-meta">
+                <span data-output={`${stack.key}-minute`}>$0/min</span>
+                ·
+                <span data-output={`${stack.key}-call`}>$0/call</span>
+              </div>
+              <ul class="breakdown">
+                <li><span>platform</span><span data-output={`${stack.key}-platform`}>$0</span></li>
+                <li><span>STT</span><span data-output={`${stack.key}-stt`}>$0</span></li>
+                <li><span>LLM</span><span data-output={`${stack.key}-llm`}>$0</span></li>
+                <li><span>TTS</span><span data-output={`${stack.key}-tts`}>$0</span></li>
+                <li><span>carrier</span><span data-output={`${stack.key}-carrier`}>$0</span></li>
+                <li><span>recording</span><span data-output={`${stack.key}-recording`}>$0</span></li>
+              </ul>
+            </div>
+          </fieldset>
+        ))
+      }
+    </div>
+
+    <div class="cost-bars" aria-label="Monthly cost comparison">
+      {
+        stacks.map((stack) => (
+          <div class="cost-bar-row" data-bar={stack.key}>
+            <span data-output={`${stack.key}-name`}>{stack.label}</span>
+            <div class="bar-track" aria-hidden="true"><div class="bar-fill" /></div>
+            <strong data-output={`${stack.key}-bar-value`}>$0</strong>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</form>
+
+<script>
+  import { z } from "zod";
+
+  import { calculateStack } from "../lib/calculate";
+  import { platforms, ScenarioSchema } from "../data/pricing";
+
+  const form = document.querySelector("[data-calculator]");
+  const stackKeys = ["a", "b", "c"] as const;
+  const money = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  });
+  const preciseMoney = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 4,
+  });
+  const MinutesSchema = z.coerce.number().int().min(1).max(10_000_000);
+
+  if (form instanceof HTMLFormElement) {
+    const numberValue = (name: string) => {
+      const field = form.elements.namedItem(name);
+      return field instanceof HTMLInputElement ? Number(field.value) : Number.NaN;
+    };
+
+    const selectValue = (name: string) => {
+      const field = form.elements.namedItem(name);
+      return field instanceof HTMLSelectElement ? field.value : "";
+    };
+
+    const setText = (key: string, value: string) => {
+      const element = form.querySelector(`[data-output="${key}"]`);
+      if (element instanceof HTMLElement) {
+        element.textContent = value;
+      }
+    };
+
+    const scenarioFor = (key: (typeof stackKeys)[number]) =>
+      ScenarioSchema.safeParse({
+        monthlyMinutes: numberValue("monthlyMinutes"),
+        averageCallMinutes: numberValue("averageCallMinutes"),
+        platformId: selectValue(`${key}-platformId`),
+        sttId: selectValue(`${key}-sttId`),
+        llmId: selectValue(`${key}-llmId`),
+        ttsId: selectValue(`${key}-ttsId`),
+        carrierId: selectValue(`${key}-carrierId`),
+        recordingId: selectValue(`${key}-recordingId`),
+      });
+
+    const setInitialState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const minutes = MinutesSchema.safeParse(params.get("minutes"));
+      const minutesField = form.elements.namedItem("monthlyMinutes");
+      if (minutes.success && minutesField instanceof HTMLInputElement) {
+        minutesField.value = String(minutes.data);
+      }
+
+      for (const key of stackKeys) {
+        const candidate = params.get(key);
+        const field = form.elements.namedItem(`${key}-platformId`);
+        if (
+          candidate !== null &&
+          field instanceof HTMLSelectElement &&
+          Array.from(field.options).some((option) => option.value === candidate)
+        ) {
+          field.value = candidate;
+        }
+      }
+    };
+
+    const render = () => {
+      const estimates = stackKeys.flatMap((key) => {
+        const parsed = scenarioFor(key);
+        if (!parsed.success) {
+          setText(`${key}-status`, "check input");
+          return [];
+        }
+
+        const platform = platforms.find((item) => item.id === parsed.data.platformId);
+        if (platform === undefined) {
+          setText(`${key}-status`, "unknown platform");
+          return [];
+        }
+
+        const result = calculateStack(parsed.data);
+        const panel = form.querySelector(`[data-stack="${key}"]`);
+        if (panel instanceof HTMLElement) {
+          for (const field of panel.querySelectorAll("[data-model-field]")) {
+            if (field instanceof HTMLSelectElement) {
+              field.disabled = platform.bundledModels;
+            }
+          }
+        }
+
+        setText(`${key}-status`, platform.bundledModels ? "models included" : "components itemized");
+        setText(`${key}-name`, platform.name);
+        setText(`${key}-monthly`, money.format(result.monthly));
+        setText(`${key}-minute`, `${preciseMoney.format(result.perMinute)}/min`);
+        setText(`${key}-call`, `${money.format(result.perCall)}/call`);
+        setText(`${key}-platform`, money.format(result.breakdown.platform));
+        setText(`${key}-stt`, money.format(result.breakdown.stt));
+        setText(`${key}-llm`, money.format(result.breakdown.llm));
+        setText(`${key}-tts`, money.format(result.breakdown.tts));
+        setText(`${key}-carrier`, money.format(result.breakdown.carrier));
+        setText(`${key}-recording`, money.format(result.breakdown.recording));
+        setText(`${key}-bar-value`, money.format(result.monthly));
+
+        return [{ key, result }];
+      });
+
+      if (estimates.length !== stackKeys.length) {
+        return;
+      }
+
+      const monthlyValues = estimates.map((item) => item.result.monthly);
+      const maxMonthly = Math.max(...monthlyValues);
+      const minMonthly = Math.min(...monthlyValues);
+
+      for (const estimate of estimates) {
+        const isBest = estimate.result.monthly === minMonthly;
+        const panel = form.querySelector(`[data-stack="${estimate.key}"]`);
+        const row = form.querySelector(`[data-bar="${estimate.key}"]`);
+        const fill = row?.querySelector(".bar-fill");
+        if (panel instanceof HTMLElement) panel.dataset["best"] = String(isBest);
+        if (row instanceof HTMLElement) row.dataset["best"] = String(isBest);
+        if (fill instanceof HTMLElement) {
+          fill.style.setProperty(
+            "--bar-width",
+            `${Math.max(4, (estimate.result.monthly / maxMonthly) * 100)}%`,
+          );
+        }
+      }
+
+      const params = new URLSearchParams();
+      params.set("minutes", String(numberValue("monthlyMinutes")));
+      for (const key of stackKeys) {
+        params.set(key, selectValue(`${key}-platformId`));
+      }
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    };
+
+    form.addEventListener("input", render);
+    form.addEventListener("change", render);
+
+    const copyButton = form.querySelector("[data-copy]");
+    if (copyButton instanceof HTMLButtonElement) {
+      copyButton.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          copyButton.textContent = "link copied";
+          window.setTimeout(() => {
+            copyButton.textContent = "copy estimate link";
+          }, 1_500);
+        } catch (error) {
+          if (error instanceof DOMException) {
+            copyButton.textContent = "copy blocked";
+            return;
+          }
+          throw error;
+        }
+      });
+    }
+
+    setInitialState();
+    render();
+  }
+</script>

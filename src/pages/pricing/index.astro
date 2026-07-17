@@ -1,0 +1,60 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { platforms, VERIFIED_AT } from "../../data/pricing";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Voice AI Provider Pricing Index"
+  description="Source-linked Voice AI pricing for Vapi, Retell, Bland, ElevenLabs, Pipecat, LiveKit, and self-hosted stacks."
+>
+  <PageHero
+    eyebrow="pricing index"
+    title="Voice AI rates, without the asterisk."
+    description={`Public self-serve pricing normalized around connected minutes. Snapshot verified ${VERIFIED_AT}; negotiated enterprise pricing is intentionally excluded.`}
+    parent={{ href: "/pricing/", label: "pricing" }}
+  />
+
+  <section class="section">
+    <SectionHead
+      label="provider profiles"
+      title="Start with what the rate includes"
+      description="A platform fee, a voice-infrastructure fee, and a bundled agent minute can differ by more than 3× after all call components are added."
+    />
+    <div class="provider-grid">
+      {
+        platforms.map((platform, index) => (
+          <a class="provider-card" href={`/pricing/${platform.slug}/`}>
+            <span class="card-index">{String(index + 1).padStart(2, "0")}</span>
+            <span class="card-arrow" aria-hidden="true">↗</span>
+            <h3>{platform.name}</h3>
+            <p>{platform.summary}</p>
+          </a>
+        ))
+      }
+      <a class="provider-card" href="/methodology/">
+        <span class="card-index">08</span>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+        <h3>Pricing methodology</h3>
+        <p>Inspect formulas, inclusion rules, snapshot policy, and the complete primary-source registry.</p>
+      </a>
+      <a class="provider-card" href="/calculator/">
+        <span class="card-index">09</span>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+        <h3>Build a custom stack</h3>
+        <p>Combine any listed platform with speech, model, carrier, and recording choices.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="notice">
+      <strong>method</strong>
+      <span>
+        Rates are stored with source URL, verification date, inclusion model, monthly base, and
+        included minutes. <a class="text-link" href="/methodology/">Read the normalization rules.</a>
+      </span>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,90 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { DIRECTORY_VERIFIED_AT, frameworks } from "../../data/directory";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export function getStaticPaths() {
+  return frameworks.map((framework) => ({
+    params: { slug: framework.slug },
+    props: { framework },
+  }));
+}
+
+const { framework } = Astro.props;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  name: framework.name,
+  description: framework.summary,
+  codeRepository: framework.repoUrl,
+  programmingLanguage: framework.language,
+  license: framework.license,
+  dateModified: DIRECTORY_VERIFIED_AT,
+};
+---
+
+<BaseLayout
+  title={`${framework.name}: Open-Source Voice AI Framework`}
+  description={`${framework.summary} Review architecture, license, best fit, operational trade-offs, repository, and docs.`}
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="OSS framework profile"
+    title={`${framework.name}.`}
+    description={framework.summary}
+    parent={{ href: "/open-source/", label: "open source" }}
+  >
+    <div class="cluster hero-actions">
+      <a class="button button-primary" href={framework.repoUrl}>view source →</a>
+      <a class="button" href={framework.docsUrl}>read docs ↗</a>
+    </div>
+  </PageHero>
+
+  <section class="section">
+    <SectionHead
+      label="project boundary"
+      title="What you are adopting"
+      description={`Repository and documentation checked ${DIRECTORY_VERIFIED_AT}. Always re-check license and release activity before adoption.`}
+    />
+    <div class="data-strip">
+      <div class="data-cell best"><span class="data-label">license</span><strong class="data-value compact-value">{framework.license}</strong></div>
+      <div class="data-cell"><span class="data-label">language</span><strong class="data-value compact-value">{framework.language}</strong></div>
+      <div class="data-cell"><span class="data-label">shape</span><strong class="data-value compact-value">{framework.architecture}</strong></div>
+      <div class="data-cell"><span class="data-label">checked</span><strong class="data-value compact-value">{DIRECTORY_VERIFIED_AT}</strong></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="fit"
+      title={`When ${framework.name} belongs on the shortlist`}
+      description="The strongest framework is the one that matches your ownership boundary, not the one with the longest provider list."
+    />
+    <div class="prose">
+      <h2>Best fit</h2>
+      <p>{framework.bestFor}</p>
+      <h2>Operational trade-off</h2>
+      <p>{framework.watchFor}</p>
+      <h2>Cost model</h2>
+      <p>
+        Open-source code does not make the full call free. Budget separately for speech models,
+        language models, telephony, phone numbers, recording, storage, observability, compute,
+        support, and the engineering time needed to keep a realtime service healthy.
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="primary sources"
+      title="Inspect the project directly"
+      description="Repository metadata can drift. Use the source and current documentation for a final technical or legal decision."
+    />
+    <ul class="source-list">
+      <li><a class="source-badge" href={framework.repoUrl}>{framework.name} repository ↗</a></li>
+      <li><a class="source-badge" href={framework.docsUrl}>{framework.name} docs ↗</a></li>
+      <li><a class="source-badge" href="/calculator/">model operating cost →</a></li>
+    </ul>
+  </section>
+</BaseLayout>

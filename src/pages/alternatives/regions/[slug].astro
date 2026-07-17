@@ -1,0 +1,65 @@
+---
+import PageHero from "../../../components/PageHero.astro";
+import SectionHead from "../../../components/SectionHead.astro";
+import { alternatives, alternativeRegions, DIRECTORY_VERIFIED_AT } from "../../../data/directory";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+
+export function getStaticPaths() {
+  return alternativeRegions.map((region) => ({
+    params: { slug: region.slug },
+    props: { region },
+  }));
+}
+
+const { region } = Astro.props;
+const regionalPlatforms = alternatives.filter((alternative) => alternative.region === region.name);
+---
+
+<BaseLayout
+  title={`Voice AI Platforms in ${region.name}`}
+  description={`${region.description} Compare public pricing models, delivery style, best fit, and official sources.`}
+>
+  <PageHero
+    eyebrow="regional Voice AI directory"
+    title={`Voice AI in ${region.name}.`}
+    description={region.description}
+    parent={{ href: "/alternatives/", label: "alternatives" }}
+  />
+
+  <section class="section">
+    <SectionHead
+      label={`${regionalPlatforms.length} platform profiles`}
+      title="Compare the operating model first"
+      description={`Public pages checked ${DIRECTORY_VERIFIED_AT}. A region label describes company or go-to-market context, not a guarantee of data residency or phone-number coverage.`}
+    />
+    <div class="provider-grid directory-grid">
+      {
+        regionalPlatforms.map((alternative, index) => (
+          <a class="provider-card directory-card" href={`/alternatives/${alternative.slug}/`}>
+            <span class="card-index">{String(index + 1).padStart(2, "0")}</span>
+            <span class="card-arrow" aria-hidden="true">↗</span>
+            <div class="card-meta"><span>{alternative.model}</span><span>{alternative.market}</span></div>
+            <h3>{alternative.name}</h3>
+            <p>{alternative.priceNote}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="regional checklist"
+      title="Verify before placing a real call"
+      description="Country support on a marketing page is not the same as production number inventory, lawful outbound use, or local data handling."
+    />
+    <div class="prose">
+      <ul>
+        <li>Confirm inbound and outbound number availability for each destination and use case.</li>
+        <li>Test native language, accent, code-switching, names, addresses, and alphanumeric strings.</li>
+        <li>Review consent, recording disclosure, DNC, data residency, retention, and escalation requirements.</li>
+        <li>Price carrier, failed attempts, transfers, phone numbers, taxes, and currency conversion separately.</li>
+      </ul>
+    </div>
+  </section>
+</BaseLayout>

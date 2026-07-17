@@ -1,0 +1,53 @@
+---
+type Props = {
+  readonly path: string;
+};
+
+const { path } = Astro.props;
+const links = [
+  { href: "/calculator/", label: "calculator" },
+  { href: "/pricing/", label: "pricing" },
+  { href: "/compare/", label: "compare" },
+  { href: "/open-source/", label: "oss" },
+  { href: "/alternatives/", label: "alternatives" },
+  { href: "/tools/", label: "tools" },
+  { href: "/guides/voice-ai-cost-guide/", label: "guide" },
+] as const;
+
+const current = (href: string) => (href === "/" ? path === href : path.startsWith(href));
+---
+
+<header class="site-header">
+  <div class="prompt" aria-hidden="true">
+    <strong>~</strong>
+    <span>voice.oss.codes</span>
+    <strong>main</strong>
+    <span>❯</span>
+  </div>
+  <div class="nav-row">
+    <a class="brand" href="/" aria-label="oss.codes/voice home">
+      oss.<span>codes</span><span class="product-mark">/voice</span>
+    </a>
+    <nav class="nav-links desktop-nav" aria-label="Primary navigation">
+      {
+        links.map((link) => (
+          <a class="nav-link" href={link.href} aria-current={current(link.href) ? "page" : undefined}>
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+    <details class="mobile-menu">
+      <summary>menu</summary>
+      <nav aria-label="Mobile navigation">
+        {
+          links.map((link) => (
+            <a class="mobile-nav-link" href={link.href} aria-current={current(link.href) ? "page" : undefined}>
+              {link.label}
+            </a>
+          ))
+        }
+      </nav>
+    </details>
+  </div>
+</header>
