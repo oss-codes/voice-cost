@@ -1114,6 +1114,14 @@ main {
   gap: var(--s2);
 }
 
+.hire-cta .button:not(.button-primary) {
+  border-color: var(--muted);
+}
+
+.hire-cta .button:not(.button-primary):hover {
+  border-color: var(--signal);
+}
+
 .footer-meta {
   display: flex;
   flex-wrap: wrap;
