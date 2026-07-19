@@ -43,13 +43,27 @@ test("mobile action, source, and footer links meet the touch-target floor", asyn
   }
 });
 
-test("global hire callout exposes direct email and WhatsApp actions", async ({ page }) => {
+test("global hire callout keeps the phone number private behind an internal redirect", async ({
+  page,
+}) => {
   await page.goto("/");
 
   const callout = page.locator(".hire-cta");
   await expect(callout).toBeVisible();
   await expect(callout.locator('[href="mailto:himanshu.indie@gmail.com"]')).toBeVisible();
-  await expect(callout.locator('[href="https://wa.me/918149963853"]')).toBeVisible();
+  await expect(callout).not.toContainText("81499");
+  await expect(callout.locator('[href*="918149963853"]')).toHaveCount(0);
+  await expect(callout.getByRole("link", { name: "Chat on WhatsApp" })).toHaveAttribute(
+    "href",
+    "/contact/whatsapp/",
+  );
+});
+
+test("global layout initializes the configured Clarity project", async ({ page }) => {
+  await page.route("https://www.clarity.ms/**", (route) => route.abort());
+  await page.goto("/");
+
+  await expect(page.locator('script[src="https://www.clarity.ms/tag/xow8usa0na"]')).toHaveCount(1);
 });
 
 test("mobile layouts avoid horizontal overflow on every page template", async ({ page }) => {
