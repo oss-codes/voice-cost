@@ -66,6 +66,21 @@ test("global layout initializes the configured Clarity project", async ({ page }
   await expect(page.locator('script[src="https://www.clarity.ms/tag/xow8usa0na"]')).toHaveCount(1);
 });
 
+test("global layout initializes the configured Cloudflare Web Analytics beacon", async ({
+  page,
+}) => {
+  await page.route("https://static.cloudflareinsights.com/**", (route) => route.abort());
+  await page.goto("/");
+
+  const beacon = page.locator('script[src="https://static.cloudflareinsights.com/beacon.min.js"]');
+  await expect(beacon).toHaveCount(1);
+  await expect(beacon).toHaveAttribute("type", "module");
+  await expect(beacon).toHaveAttribute(
+    "data-cf-beacon",
+    '{"token": "21d4ee10a52b425d8ea3f8eba9521312"}',
+  );
+});
+
 test("mobile layouts avoid horizontal overflow on every page template", async ({ page }) => {
   for (const route of representativeRoutes) {
     await page.goto(route);
