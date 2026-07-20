@@ -1,38 +1,169 @@
 ---
+import FaqList from "../../components/FaqList.astro";
+import NormalizedCostTable from "../../components/NormalizedCostTable.astro";
 import PageHero from "../../components/PageHero.astro";
 import SectionHead from "../../components/SectionHead.astro";
 import { comparisons } from "../../data/pricing";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const COMPARISON_VERIFIED_AT = "2026-07-20";
+
+const faqs = [
+  {
+    question: "What is the best voice AI platform in 2026?",
+    answer:
+      "For a managed phone-agent product, start with Vapi or Retell. Choose Bland when a bundled AI minute matters more than provider choice. Choose LiveKit or Pipecat when your team wants to own the agent code and media path.",
+  },
+  {
+    question: "Why is the modeled cost higher than the advertised platform price?",
+    answer:
+      "Most platform prices cover orchestration or agent hosting. A working phone call can also incur STT, LLM, TTS, carrier, number, recording, transfer, and concurrency charges.",
+  },
+  {
+    question: "Does this comparison include realtime speech-to-speech models?",
+    answer:
+      "The main table uses a cascaded STT, LLM, and TTS stack so every platform can share one baseline. The realtime calculator separately prices caller audio and agent audio for native speech-to-speech models.",
+  },
+  {
+    question: "Are these prices quotes?",
+    answer:
+      "No. They are public list-price estimates checked on the date shown. Contracts, country routes, model usage, silence billing, failed calls, and negotiated volume discounts can change the invoice.",
+  },
+] as const;
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: "Voice AI Platform Comparison 2026: Pricing, Latency and Features",
+  description:
+    "A source-backed comparison of Vapi, Retell AI, Bland AI, ElevenAgents, LiveKit, Pipecat, and self-hosted voice AI stacks.",
+  dateModified: COMPARISON_VERIFIED_AT,
+  author: { "@type": "Person", name: "Himanshu Maurya", alternateName: "codingstark" },
+};
 ---
 
 <BaseLayout
-  title="Voice AI Platform Comparisons"
-  description="Head-to-head Voice AI platform comparisons for Vapi, Retell, Bland, ElevenLabs, LiveKit, and Pipecat."
+  title="Voice AI Platform Comparison 2026: Pricing, Latency and Features"
+  description="Compare Vapi, Retell AI, Bland AI, ElevenAgents, LiveKit, Pipecat, and self-hosted voice AI costs using one transparent 2026 workload."
+  structuredData={structuredData}
 >
   <PageHero
-    eyebrow="head-to-head"
-    title="Compare the stack, not the headline."
-    description="Side-by-side pricing models, ownership trade-offs, and normalized cost examples for the Voice AI platforms teams actually shortlist."
+    eyebrow="2026 buyer's guide"
+    title="Compare voice AI platforms by the bill you will actually pay."
+    description="A practical comparison of hosted platforms and open frameworks, with public pricing normalized across the same phone-call workload."
     parent={{ href: "/compare/", label: "compare" }}
-  />
+  >
+    <div class="cluster hero-actions">
+      <a class="button button-primary" href="#cost-table">compare costs ↓</a>
+      <a class="button" href="/calculator/">build your own stack</a>
+    </div>
+  </PageHero>
+
+  <section class="section" aria-labelledby="short-answer">
+    <SectionHead
+      label="start here"
+      title="The short answer"
+      description="There is no honest single winner. The useful split is how much of the stack you want the platform to own."
+    />
+    <div class="decision-strip" id="short-answer">
+      <article><span>managed API</span><h3>Vapi or Retell</h3><p>Good first shortlist when you want phone-agent APIs, dashboards, and less media infrastructure to operate.</p></article>
+      <article><span>bundled rate</span><h3>Bland AI</h3><p>Worth testing when one AI minute and predictable model pass-throughs matter more than mixing providers.</p></article>
+      <article><span>voice quality</span><h3>ElevenAgents</h3><p>A natural shortlist when ElevenLabs voices are the product. Confirm the plan, LLM treatment, and telephony before budgeting.</p></article>
+      <article><span>open control</span><h3>LiveKit or Pipecat</h3><p>Best fit for engineering teams that want agent code, transport, and model choice to remain portable.</p></article>
+    </div>
+  </section>
+
+  <section class="section" id="cost-table">
+    <SectionHead
+      label="normalized cost"
+      title="One workload, six public pricing models"
+      description="Change the connected minutes below. Every row uses the same model and US carrier assumptions, so the comparison tests pricing shape instead of a provider's favorite demo."
+    />
+    <NormalizedCostTable />
+  </section>
 
   <section class="section">
     <SectionHead
-      label="comparison library"
-      title="Choose a decision"
-      description="Every comparison uses the same 10,000-minute baseline, then explains where a platform's architecture or pricing model changes the answer."
+      label="cost anatomy"
+      title="What the total includes"
+      description="A $0.05 platform fee is not a $0.05 phone call. The invoice is assembled across several meters."
     />
-    <div class="comparison-grid">
-      {
-        comparisons.map((comparison, index) => (
-          <a class="comparison-card" href={`/compare/${comparison.slug}/`}>
-            <span class="card-index">{String(index + 1).padStart(2, "0")}</span>
-            <span class="card-arrow" aria-hidden="true">↗</span>
-            <h3>{comparison.title}</h3>
-            <p>{comparison.description}</p>
-          </a>
-        ))
-      }
+    <div class="prose split-prose">
+      <div><h3>Platform and media</h3><p>The platform runs orchestration, agent sessions, transport, or call control. Vapi lists a $0.05/min hosting fee. Retell lists $0.055/min for voice infrastructure.</p></div>
+      <div><h3>Speech and reasoning</h3><p>Cascaded agents pay for transcription, language-model work, and generated speech. The baseline uses Nova-3, GPT-5 mini, and a $0.015/min voice.</p></div>
+      <div><h3>Telephony</h3><p>The US outbound baseline adds Twilio at $0.014/min. Inbound, toll-free, SIP, India, and other country routes need their own carrier rate.</p></div>
+      <div><h3>Production extras</h3><p>Recording, transfers, phone numbers, denoising, knowledge bases, observability, and extra concurrency can move the total after the first pilot.</p></div>
     </div>
   </section>
+
+  <section class="section">
+    <SectionHead
+      label="selection guide"
+      title="Pick the operating model first"
+      description="The cheapest row can still be the wrong system if your team cannot support its ownership model."
+    />
+    <table class="simple-table decision-table">
+      <thead><tr><th>If your constraint is</th><th>Start with</th><th>Pressure-test before buying</th></tr></thead>
+      <tbody>
+        <tr><td>Fast managed launch</td><td data-label="Start with">Vapi, Retell</td><td data-label="Pressure-test">Model freedom, concurrency, support, call logs</td></tr>
+        <tr><td>Predictable AI rate</td><td data-label="Start with">Bland</td><td data-label="Pressure-test">Carrier pass-through, transfers, daily caps</td></tr>
+        <tr><td>Voice is the product</td><td data-label="Start with">ElevenAgents</td><td data-label="Pressure-test">LLM billing, phone routes, plan commitment</td></tr>
+        <tr><td>Open agent code</td><td data-label="Start with">Pipecat</td><td data-label="Pressure-test">Hosting profile, transport, on-call ownership</td></tr>
+        <tr><td>WebRTC and media rooms</td><td data-label="Start with">LiveKit</td><td data-label="Pressure-test">Plan minimum, inference, observability</td></tr>
+        <tr><td>Infrastructure control</td><td data-label="Start with">Self-hosted</td><td data-label="Pressure-test">Capacity, upgrades, monitoring, incident response</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="native audio"
+      title="Realtime voice changes the model bill"
+      description="A native speech-to-speech model does not have separate STT and TTS meters. Input audio and output audio are priced differently."
+    />
+    <div class="prose">
+      <p>That difference matters because the caller and agent rarely speak for equal time. A sales qualification agent may listen more. A reminder agent may speak more.</p>
+      <p>Voice OSS models both sides instead of multiplying one advertised token rate by call length. Use the <a href="/tools/realtime-voice-cost-calculator/">realtime voice cost calculator</a> for OpenAI and Gemini native-audio scenarios.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="method"
+      title="How this comparison was built"
+      description={`Public pricing was checked against provider-owned pages on ${COMPARISON_VERIFIED_AT}. No affiliate ranking or paid placement changes the order.`}
+    />
+    <div class="prose">
+      <p>We normalize connected minutes, model choices, carrier direction, and recording policy. The result is a list-price model, not a benchmark or negotiated quote.</p>
+      <p>We did not invent latency scores. Latency changes with the model, region, carrier path, endpointing, tools, and prompt. Run the same scripted calls from the countries you serve before committing.</p>
+      <p>Every platform name in the table links to its primary pricing page. The formulas and assumptions are documented in the <a href="/methodology/">methodology</a>.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead label="head-to-head" title="Read the closer match" description="These pages unpack the pricing and ownership boundary between common shortlist pairs." />
+    <div class="comparison-grid">
+      {comparisons.map((comparison, index) => <a class="comparison-card" href={`/compare/${comparison.slug}/`}><span class="card-index">{String(index + 1).padStart(2, "0")}</span><span class="card-arrow" aria-hidden="true">↗</span><h3>{comparison.title}</h3><p>{comparison.description}</p></a>)}
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead label="FAQ" title="Voice AI comparison questions" description="The practical answers we use before a paid pilot." />
+    <FaqList items={faqs} />
+  </section>
 </BaseLayout>
+
+<style>
+  .decision-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; border: 1px solid var(--border); background: var(--border); }
+  .hero-actions .button:not(.button-primary) { border-color: var(--dim); }
+  .decision-strip article { min-width: 0; padding: var(--s6); background: var(--bg); }
+  .decision-strip span { color: var(--signal); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; }
+  .decision-strip h3 { margin: var(--s10) 0 var(--s3); font-family: var(--font-mono); font-size: 18px; font-weight: 450; }
+  .decision-strip p { margin: 0; color: var(--muted); font-size: 13px; }
+  .split-prose { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s8); max-width: none; }
+  .split-prose > div { border-top: 1px solid var(--border); padding-top: var(--s4); }
+  .decision-table td:nth-child(2) { color: var(--signal); }
+  .comparison-grid .comparison-card:last-child { grid-column: span 2; }
+  @media (max-width: 820px) { .decision-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .decision-strip, .split-prose { grid-template-columns: 1fr; } .decision-strip article { padding: var(--s5); } .decision-strip h3 { margin-top: var(--s8); } .comparison-grid .comparison-card:last-child { grid-column: span 1; } }
+</style>
