@@ -14,6 +14,107 @@ const { title, description, noindex = false, structuredData } = Astro.props;
 const site = Astro.site ?? new URL("https://voice.oss.codes");
 const canonical = new URL(Astro.url.pathname, site);
 const fullTitle = title.includes("Voice OSS") ? title : `${title} | Voice OSS`;
+const socialImage = new URL("/og.png", site);
+const organizationId = new URL("/#organization", site).href;
+const websiteId = new URL("/#website", site).href;
+const webpageId = `${canonical.href}#webpage`;
+const primaryEntityId = `${canonical.href}#primary`;
+const structuredType = structuredData?.["@type"];
+const articleModifiedTime =
+  structuredType === "Article" && typeof structuredData?.["dateModified"] === "string"
+    ? structuredData["dateModified"]
+    : undefined;
+const sectionBreadcrumbs = [
+  { prefix: "/alternatives/", href: "/alternatives/", name: "Voice AI alternatives" },
+  { prefix: "/compare/", href: "/compare/", name: "Voice AI comparisons" },
+  { prefix: "/open-source/", href: "/open-source/", name: "Open-source frameworks" },
+  { prefix: "/pricing/", href: "/pricing/", name: "Voice AI pricing" },
+  { prefix: "/tools/", href: "/tools/", name: "Voice AI tools" },
+] as const;
+const parentBreadcrumb = sectionBreadcrumbs.find(
+  (entry) => canonical.pathname.startsWith(entry.prefix) && canonical.pathname !== entry.href,
+);
+const breadcrumbItems = [
+  { "@type": "ListItem", position: 1, name: "Voice OSS", item: site.href },
+  ...(parentBreadcrumb
+    ? [
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: parentBreadcrumb.name,
+          item: new URL(parentBreadcrumb.href, site).href,
+        },
+      ]
+    : []),
+  {
+    "@type": "ListItem",
+    position: parentBreadcrumb ? 3 : 2,
+    name: title,
+    item: canonical.href,
+  },
+];
+const breadcrumbId = `${canonical.href}#breadcrumb`;
+const primaryEntity = structuredData
+  ? {
+      ...structuredData,
+      "@context": undefined,
+      "@id": primaryEntityId,
+      url: structuredData["url"] ?? canonical.href,
+      mainEntityOfPage: { "@id": webpageId },
+    }
+  : undefined;
+const linkedData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": organizationId,
+      name: "OSS.codes",
+      url: "https://oss.codes/",
+      founder: {
+        "@type": "Person",
+        name: "Himanshu Maurya",
+        alternateName: "codingstark",
+        url: "https://github.com/codingstark-dev",
+      },
+      sameAs: ["https://github.com/oss-codes"],
+    },
+    {
+      "@type": "WebSite",
+      "@id": websiteId,
+      name: "Voice OSS",
+      alternateName: "OSS.codes Voice",
+      url: site.href,
+      publisher: { "@id": organizationId },
+    },
+    {
+      "@type": "WebPage",
+      "@id": webpageId,
+      url: canonical.href,
+      name: fullTitle,
+      description,
+      isPartOf: { "@id": websiteId },
+      ...(canonical.pathname === "/" ? {} : { breadcrumb: { "@id": breadcrumbId } }),
+      ...(primaryEntity ? { mainEntity: { "@id": primaryEntityId } } : {}),
+      primaryImageOfPage: {
+        "@type": "ImageObject",
+        url: socialImage.href,
+        width: 1200,
+        height: 630,
+      },
+    },
+    ...(canonical.pathname === "/"
+      ? []
+      : [
+          {
+            "@type": "BreadcrumbList",
+            "@id": breadcrumbId,
+            itemListElement: breadcrumbItems,
+          },
+        ]),
+    ...(primaryEntity ? [primaryEntity] : []),
+  ],
+};
 ---
 
 <!doctype html>
@@ -26,17 +127,24 @@ const fullTitle = title.includes("Voice OSS") ? title : `${title} | Voice OSS`;
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <meta name="author" content="Himanshu Maurya (codingstark)" />
-    <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large"} />
+    <meta
+      name="robots"
+      content={noindex
+        ? "noindex, nofollow"
+        : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"}
+    />
     <link rel="canonical" href={canonical} />
+    <link rel="author" href="/about/" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={structuredType === "Article" ? "article" : "website"} />
     <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content="Voice OSS" />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={new URL("/og.png", site)} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:secure_url" content={socialImage} />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -44,13 +152,10 @@ const fullTitle = title.includes("Voice OSS") ? title : `${title} | Voice OSS`;
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={new URL("/og.png", site)} />
+    <meta name="twitter:image" content={socialImage} />
     <meta name="twitter:image:alt" content="Voice OSS: Voice AI costs, decoded" />
-    {
-      structuredData && (
-        <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
-      )
-    }
+    {articleModifiedTime && <meta property="article:modified_time" content={articleModifiedTime} />}
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(linkedData)} />
     <script is:inline type="text/javascript">
       (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};

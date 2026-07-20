@@ -7,13 +7,22 @@ type Props = {
 };
 
 const { eyebrow, title, description, parent } = Astro.props;
+const parentIsCurrentPage = parent?.href === Astro.url.pathname;
 ---
 
 <header class="page-hero">
   {
     parent && (
       <nav class="breadcrumbs" aria-label="Breadcrumb">
-        <a href="/">home</a> / <a href={parent.href}>{parent.label}</a> / current
+        <a href="/">home</a>
+        <span aria-hidden="true"> / </span>
+        {!parentIsCurrentPage && (
+          <>
+            <a href={parent.href}>{parent.label}</a>
+            <span aria-hidden="true"> / </span>
+          </>
+        )}
+        <span aria-current="page">{title}</span>
       </nav>
     )
   }

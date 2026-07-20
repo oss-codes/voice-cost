@@ -6,6 +6,7 @@ export default defineConfig({
   integrations: [
     sitemap({
       filter: (page) => page !== "https://voice.oss.codes/system/",
+      lastmod: new Date("2026-07-20"),
     }),
   ],
   trailingSlash: "always",
