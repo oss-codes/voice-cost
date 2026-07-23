@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const VERIFIED_AT = "2026-07-18";
+export const VERIFIED_AT = "2026-07-23";
 
 export const platforms = [
   {
@@ -104,6 +104,13 @@ export const sttModels = [
     detail: "$0.39/hour realtime transcription.",
     sourceUrl: "https://elevenlabs.io/pricing/api?price.platform=api",
   },
+  {
+    id: "soniox-stt-rt-v5",
+    name: "Soniox STT Real-Time v5",
+    perMinute: 0.12 / 60,
+    detail: "$0.12/hour realtime transcription.",
+    sourceUrl: "https://soniox.com/pricing",
+  }
 ] as const;
 
 export const llmModels = [
@@ -158,6 +165,13 @@ export const ttsModels = [
     perMinute: 0.04,
     detail: "Published integrated Retell voice rate.",
     sourceUrl: "https://www.retellai.com/pricing",
+  },
+  {
+    id: "soniox-tts",
+    name: "Soniox TTS",
+    perMinute: 0.011,
+    detail: "Approximately $0.70/hour of generated speech.",
+    sourceUrl: "https://soniox.com/pricing",
   },
 ] as const;
 
@@ -269,9 +283,9 @@ export const ScenarioSchema = z.object({
     "livekit",
     "self-hosted",
   ]),
-  sttId: z.enum(["deepgram-nova-3", "elevenlabs-scribe-realtime"]),
+  sttId: z.enum(["deepgram-nova-3", "elevenlabs-scribe-realtime", "soniox-stt-rt-v5"]),
   llmId: z.enum(["gpt-5-mini", "gpt-4-1-mini", "gemini-flash-lite", "gpt-5-2"]),
-  ttsId: z.enum(["retell-platform", "elevenlabs-flash", "retell-elevenlabs"]),
+  ttsId: z.enum(["retell-platform", "elevenlabs-flash", "retell-elevenlabs", "soniox-tts"]),
   carrierId: z.enum(["twilio-outbound-us", "twilio-inbound-us", "daily-pstn-us", "custom-sip"]),
   recordingId: z.enum(["none", "twilio-recording", "daily-audio-recording"]),
 });
