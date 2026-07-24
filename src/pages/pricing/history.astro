@@ -1,0 +1,45 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { pricingHistory } from "../../data/planning";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  name: "Voice OSS pricing snapshot history",
+  description: "Dated changes to the public pricing assumptions used by Voice OSS tools.",
+  dateModified: "2026-07-24",
+  license: "https://opensource.org/license/mit",
+};
+---
+
+<BaseLayout
+  title="Voice AI Provider Pricing Snapshot History"
+  description="Dated, repository-backed changes to the public Voice AI pricing assumptions used by Voice OSS calculators."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="pricing changelog"
+    title="See when a rate entered the model."
+    description="This is the history of Voice OSS pricing snapshots. It is not a complete archive of every provider price change."
+    parent={{ href: "/pricing/", label: "pricing" }}
+  />
+  <section class="section">
+    <SectionHead label="repository evidence" title="A short, auditable history" description="Every published number still needs a fresh vendor-page check before procurement." />
+    <ol class="history-list">
+      {pricingHistory.toReversed().map((entry) => (
+        <li>
+          <time datetime={entry.date}>{entry.date}</time>
+          <div>
+            <h2>{entry.title}</h2>
+            <p>{entry.detail}</p>
+            {entry.commit !== "pending" && (
+              <a href={`https://github.com/oss-codes/voice-cost/commit/${entry.commit}`}>view source commit ↗</a>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
+  </section>
+</BaseLayout>

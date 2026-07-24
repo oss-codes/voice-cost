@@ -1,0 +1,160 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { readinessChecks } from "../../data/planning";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { scoreReadiness } from "../../lib/expansion-tools";
+
+const categories = [...new Set(readinessChecks.map((check) => check.category))];
+const initial = scoreReadiness(readinessChecks, new Set());
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Voice AI Production Readiness Checker",
+  url: "https://voice.oss.codes/tools/voice-ai-production-readiness/",
+  applicationCategory: "DeveloperApplication",
+  description:
+    "Score Voice AI production readiness across compliance, security, reliability, observability, capacity, and launch operations.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Voice AI Production Readiness Checker"
+  description="Check Voice AI launch readiness across consent, security, fallbacks, observability, call capacity, human transfer, rollback, and real-number pilots."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="production readiness"
+    title="Find the launch gate your demo never exercised."
+    description="Score 20 concrete controls across compliance, security, reliability, observability, capacity, and launch ownership. Critical missing controls stay visible even when the percentage looks healthy."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="builder-shell readiness-checker" data-readiness autocomplete="off">
+      <div class="builder-controls readiness-controls">
+        {
+          categories.map((category) => (
+            <fieldset class="check-group">
+              <legend>{category}</legend>
+              {
+                readinessChecks.filter((check) => check.category === category).map((check) => (
+                  <label class="check-field">
+                    <input type="checkbox" name="check" value={check.id} />
+                    <span>
+                      <strong>{check.label}</strong>
+                      <small>{check.critical ? "critical launch gate" : `${check.weight} point control`}</small>
+                    </span>
+                  </label>
+                ))
+              }
+            </fieldset>
+          ))
+        }
+        <div class="calc-actions">
+          <button class="button" type="button" data-select-all>Select all</button>
+          <button class="button" type="reset">Clear checklist</button>
+        </div>
+      </div>
+      <div class="builder-output readiness-output" aria-live="polite">
+        <span class="data-label">readiness score</span>
+        <strong class="metric-primary" data-score>{initial.score}%</strong>
+        <p class="metric-explanation" data-band>Not ready for a controlled pilot.</p>
+        <div class="readiness-meter" aria-hidden="true"><i data-meter></i></div>
+        <div class="readiness-summary">
+          <div><span class="data-label">controls complete</span><strong data-complete>0 / {readinessChecks.length}</strong></div>
+          <div><span class="data-label">critical gates missing</span><strong data-critical>{initial.missingCritical.length}</strong></div>
+        </div>
+        <div class="missing-gates">
+          <span class="data-label">missing critical gates</span>
+          <ul data-missing>
+            {initial.missingCritical.map((check) => <li>{check.label}</li>)}
+          </ul>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="interpretation"
+      title="A high score cannot override a missing critical gate"
+      description="Use this as a release conversation, not a certification. Legal review, security testing, carrier approval, and a paid pilot remain external evidence."
+    />
+  </section>
+</BaseLayout>
+
+<script>
+  import { readinessChecks } from "../../data/planning";
+  import { scoreReadiness } from "../../lib/expansion-tools";
+
+  const form = document.querySelector("[data-readiness]");
+  if (form instanceof HTMLFormElement) {
+    const render = () => {
+      const selected = new Set(
+        Array.from(form.querySelectorAll<HTMLInputElement>('input[name="check"]:checked')).map(
+          (field) => field.value,
+        ),
+      );
+      const result = scoreReadiness(readinessChecks, selected);
+      const text = (selector: string, value: string) => {
+        const element = form.querySelector(selector);
+        if (element instanceof HTMLElement) element.textContent = value;
+      };
+      text("[data-score]", `${result.score}%`);
+      text("[data-complete]", `${selected.size} / ${readinessChecks.length}`);
+      text("[data-critical]", String(result.missingCritical.length));
+      text(
+        "[data-band]",
+        result.missingCritical.length > 0
+          ? "Critical launch gates are still open."
+          : result.score >= 85
+            ? "Ready for a controlled production pilot."
+            : "Critical gates are closed, but supporting controls remain.",
+      );
+      const meter = form.querySelector("[data-meter]");
+      if (meter instanceof HTMLElement) meter.style.setProperty("--readiness", `${result.score}%`);
+      const list = form.querySelector("[data-missing]");
+      if (list instanceof HTMLUListElement) {
+        list.replaceChildren(
+          ...result.missingCritical.map((check) => {
+            const item = document.createElement("li");
+            item.textContent = check.label;
+            return item;
+          }),
+        );
+        if (result.missingCritical.length === 0) {
+          const item = document.createElement("li");
+          item.textContent = "No critical gates missing.";
+          list.append(item);
+        }
+      }
+      const params = new URLSearchParams();
+      if (selected.size > 0) params.set("checks", Array.from(selected).join(","));
+      window.history.replaceState(
+        null,
+        "",
+        params.size > 0 ? `${window.location.pathname}?${params.toString()}` : window.location.pathname,
+      );
+    };
+    const setInitialState = () => {
+      const selected = new Set(
+        (new URLSearchParams(window.location.search).get("checks") ?? "").split(","),
+      );
+      form.querySelectorAll<HTMLInputElement>('input[name="check"]').forEach((field) => {
+        field.checked = selected.has(field.value);
+      });
+    };
+    form.addEventListener("change", render);
+    form.addEventListener("reset", () => window.setTimeout(render));
+    form.querySelector("[data-select-all]")?.addEventListener("click", () => {
+      form.querySelectorAll<HTMLInputElement>('input[name="check"]').forEach((field) => {
+        field.checked = true;
+      });
+      render();
+    });
+    setInitialState();
+    render();
+  }
+</script>

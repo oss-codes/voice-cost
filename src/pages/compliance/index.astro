@@ -1,0 +1,50 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import ToolCard from "../../components/ToolCard.astro";
+import { COMPLIANCE_VERIFIED_AT, complianceGuides } from "../../data/compliance";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  name: "Voice AI calling compliance guides",
+  description: "Source-linked starting checklists for Voice AI calls in the US, India, EU, and UK.",
+  dateModified: COMPLIANCE_VERIFIED_AT,
+};
+---
+
+<BaseLayout
+  title="Voice AI Calling Compliance Guides by Country"
+  description="Source-linked Voice AI calling compliance checklists for the United States, India, European Union, and United Kingdom."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="country compliance"
+    title="Know the calling rules before you dial."
+    description="Practical starting checklists for consent, disclosure, recording, suppression, privacy, and evidence. Verify the exact use case with qualified counsel before launch."
+    parent={{ href: "/compliance/", label: "compliance" }}
+  />
+
+  <section class="section">
+    <SectionHead
+      label={`reviewed ${COMPLIANCE_VERIFIED_AT}`}
+      title="Four regulatory starting points"
+      description="Each page separates the operational questions your team must answer and links directly to regulator material."
+    />
+    <div class="notice-card">
+      <strong>Not legal advice.</strong>
+      <span>Rules depend on call purpose, consent, recipient, location, recording, and sector.</span>
+    </div>
+    <div class="tool-grid guide-grid">
+      {complianceGuides.map((guide, index) => (
+        <ToolCard
+          index={`0${index + 1}`}
+          title={guide.name}
+          description={guide.summary}
+          href={`/compliance/${guide.slug}/`}
+        />
+      ))}
+    </div>
+  </section>
+</BaseLayout>

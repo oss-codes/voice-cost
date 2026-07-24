@@ -1,0 +1,262 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { defaultCallFlow } from "../../data/planning";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { buildCallFlowMermaid } from "../../lib/expansion-tools";
+
+const initialMermaid = buildCallFlowMermaid(defaultCallFlow);
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Voice AI Call Flow Builder",
+  url: "https://voice.oss.codes/tools/voice-ai-call-flow-builder/",
+  applicationCategory: "DeveloperApplication",
+  description:
+    "Build a Voice AI call flow with greeting, listening, tools, decisions, transfer, and end steps, then export JSON and Mermaid.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Voice AI Call Flow Builder"
+  description="Create and reorder Voice AI greeting, qualification, tool, decision, transfer, and hang-up steps, then export JSON and Mermaid."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="call flow builder"
+    title="Design the call before writing the prompt."
+    description="Build a linear first version of the customer journey, reorder steps, and export it for engineering review. Keep policy decisions and human escape routes visible."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="builder-shell flow-builder" data-flow-builder autocomplete="off">
+      <div class="builder-controls">
+        <div class="flow-editor" data-flow-editor>
+          {
+            defaultCallFlow.map((node, index) => (
+              <fieldset class="flow-node" data-flow-node data-id={node.id}>
+                <legend>Step {index + 1}</legend>
+                <label class="field">
+                  <span class="field-label">Type</span>
+                  <select data-node-type>
+                    {["say", "listen", "tool", "decision", "transfer", "end"].map((type) => (
+                      <option value={type} selected={type === node.type}>{type}</option>
+                    ))}
+                  </select>
+                </label>
+                <label class="field">
+                  <span class="field-label">Purpose</span>
+                  <input data-node-label value={node.label} maxlength="160" />
+                </label>
+                <div class="flow-node-actions">
+                  <button type="button" data-action="up" aria-label={`Move step ${index + 1} up`}>↑</button>
+                  <button type="button" data-action="down" aria-label={`Move step ${index + 1} down`}>↓</button>
+                  <button type="button" data-action="remove">Remove</button>
+                </div>
+              </fieldset>
+            ))
+          }
+        </div>
+        <p class="form-error" data-form-error role="alert" aria-live="assertive" hidden></p>
+        <div class="calc-actions">
+          <button class="button button-primary" type="button" data-add-node>Add step</button>
+          <button class="button" type="reset">Reset flow</button>
+        </div>
+        <p class="field-note">The shareable URL contains the step labels. Do not place customer data or credentials in a flow.</p>
+      </div>
+      <div class="builder-output">
+        <div class="output-heading">
+          <div><span class="data-label">flow preview</span><h2>Caller journey</h2></div>
+          <button class="button" type="button" data-download-flow>Download JSON</button>
+        </div>
+        <ol class="flow-preview" data-flow-preview>
+          {defaultCallFlow.map((node) => <li><span>{node.type}</span><strong>{node.label}</strong></li>)}
+        </ol>
+        <article class="config-block">
+          <header>
+            <div><span class="data-label">diagram export</span><strong>call-flow.mmd</strong></div>
+            <div class="config-actions"><button type="button" data-copy-mermaid>Copy Mermaid</button></div>
+          </header>
+          <pre><code data-mermaid>{initialMermaid}</code></pre>
+        </article>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="next step"
+      title="Attach a success condition and failure path to every tool"
+      description="The linear flow is the review baseline. Production logic still needs timeouts, retry limits, invalid responses, tool failure, transfer failure, after-hours behavior, and a safe end state."
+    />
+  </section>
+</BaseLayout>
+
+<script>
+  import { z } from "zod";
+
+  import { defaultCallFlow, type CallFlowNode } from "../../data/planning";
+  import { buildCallFlowMermaid } from "../../lib/expansion-tools";
+
+  const form = document.querySelector("[data-flow-builder]");
+  const FlowSchema = z.array(z.object({
+    id: z.string().min(1).max(64),
+    type: z.enum(["say", "listen", "tool", "decision", "transfer", "end"]),
+    label: z.string().trim().min(1).max(160),
+  })).min(1).max(12);
+
+  if (form instanceof HTMLFormElement) {
+    const editor = form.querySelector("[data-flow-editor]");
+    const readNodes = (): CallFlowNode[] => {
+      if (!(editor instanceof HTMLElement)) return [];
+      return Array.from(editor.querySelectorAll<HTMLElement>("[data-flow-node]")).map((row) => {
+        const type = row.querySelector("[data-node-type]");
+        const label = row.querySelector("[data-node-label]");
+        return {
+          id: row.dataset["id"] ?? crypto.randomUUID(),
+          type: type instanceof HTMLSelectElement ? type.value as CallFlowNode["type"] : "say",
+          label: label instanceof HTMLInputElement ? label.value.trim() : "",
+        };
+      });
+    };
+    const createRow = (node: CallFlowNode) => {
+      const row = document.createElement("fieldset");
+      row.className = "flow-node";
+      row.dataset["flowNode"] = "";
+      row.dataset["id"] = node.id;
+      const legend = document.createElement("legend");
+      const typeLabel = document.createElement("label");
+      typeLabel.className = "field";
+      typeLabel.innerHTML = '<span class="field-label">Type</span>';
+      const select = document.createElement("select");
+      select.dataset["nodeType"] = "";
+      for (const type of ["say", "listen", "tool", "decision", "transfer", "end"]) {
+        const option = document.createElement("option");
+        option.value = type;
+        option.textContent = type;
+        option.selected = type === node.type;
+        select.append(option);
+      }
+      typeLabel.append(select);
+      const purposeLabel = document.createElement("label");
+      purposeLabel.className = "field";
+      purposeLabel.innerHTML = '<span class="field-label">Purpose</span>';
+      const input = document.createElement("input");
+      input.dataset["nodeLabel"] = "";
+      input.maxLength = 160;
+      input.value = node.label;
+      purposeLabel.append(input);
+      const actions = document.createElement("div");
+      actions.className = "flow-node-actions";
+      const actionsList: Array<[string, string]> = [
+        ["up", "↑"],
+        ["down", "↓"],
+        ["remove", "Remove"],
+      ];
+      for (const [action, text] of actionsList) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset["action"] = action;
+        button.textContent = text;
+        if (action !== "remove") button.setAttribute("aria-label", `Move step ${action}`);
+        actions.append(button);
+      }
+      row.append(legend, typeLabel, purposeLabel, actions);
+      return row;
+    };
+    const setNodes = (nodes: readonly CallFlowNode[]) => {
+      if (!(editor instanceof HTMLElement)) return;
+      editor.replaceChildren(...nodes.map(createRow));
+    };
+    const updateLegends = () => {
+      if (!(editor instanceof HTMLElement)) return;
+      editor.querySelectorAll<HTMLElement>("[data-flow-node]").forEach((row, index) => {
+        const legend = row.querySelector("legend");
+        if (legend) legend.textContent = `Step ${index + 1}`;
+      });
+    };
+    const render = () => {
+      const parsed = FlowSchema.safeParse(readNodes());
+      const error = form.querySelector("[data-form-error]");
+      if (!parsed.success) {
+        if (error instanceof HTMLElement) {
+          error.textContent = "Keep 1 to 12 steps and give every step a purpose.";
+          error.hidden = false;
+        }
+        return;
+      }
+      if (error instanceof HTMLElement) {
+        error.textContent = "";
+        error.hidden = true;
+      }
+      updateLegends();
+      const preview = form.querySelector("[data-flow-preview]");
+      if (preview instanceof HTMLOListElement) {
+        preview.replaceChildren(...parsed.data.map((node) => {
+          const item = document.createElement("li");
+          const type = document.createElement("span");
+          type.textContent = node.type;
+          const label = document.createElement("strong");
+          label.textContent = node.label;
+          item.append(type, label);
+          return item;
+        }));
+      }
+      const mermaid = form.querySelector("[data-mermaid]");
+      if (mermaid instanceof HTMLElement) mermaid.textContent = buildCallFlowMermaid(parsed.data);
+      const params = new URLSearchParams({ flow: JSON.stringify(parsed.data) });
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    };
+    const setInitialState = () => {
+      const candidate = new URLSearchParams(window.location.search).get("flow");
+      if (!candidate) return;
+      try {
+        setNodes(FlowSchema.parse(JSON.parse(candidate)));
+      } catch {
+        setNodes(defaultCallFlow);
+      }
+    };
+    form.addEventListener("input", render);
+    form.addEventListener("change", render);
+    form.addEventListener("reset", () => window.setTimeout(() => {
+      setNodes(defaultCallFlow);
+      render();
+    }));
+    editor?.addEventListener("click", (event) => {
+      const button = event.target;
+      if (!(button instanceof HTMLButtonElement)) return;
+      const row = button.closest("[data-flow-node]");
+      if (!(row instanceof HTMLElement) || !(editor instanceof HTMLElement)) return;
+      const action = button.dataset["action"];
+      if (action === "remove" && editor.children.length > 1) row.remove();
+      if (action === "up" && row.previousElementSibling) editor.insertBefore(row, row.previousElementSibling);
+      if (action === "down" && row.nextElementSibling) editor.insertBefore(row.nextElementSibling, row);
+      render();
+    });
+    form.querySelector("[data-add-node]")?.addEventListener("click", () => {
+      if (!(editor instanceof HTMLElement) || editor.children.length >= 12) return;
+      editor.append(createRow({ id: crypto.randomUUID(), type: "say", label: "Describe this step" }));
+      render();
+    });
+    form.querySelector("[data-copy-mermaid]")?.addEventListener("click", async (event) => {
+      const output = form.querySelector("[data-mermaid]");
+      if (!(output instanceof HTMLElement)) return;
+      await navigator.clipboard.writeText(output.textContent ?? "");
+      if (event.currentTarget instanceof HTMLButtonElement) event.currentTarget.textContent = "Copied";
+    });
+    form.querySelector("[data-download-flow]")?.addEventListener("click", () => {
+      const parsed = FlowSchema.safeParse(readNodes());
+      if (!parsed.success) return;
+      const url = URL.createObjectURL(new Blob([JSON.stringify(parsed.data, null, 2)], { type: "application/json" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "voice-ai-call-flow.json";
+      anchor.click();
+      URL.revokeObjectURL(url);
+    });
+    setInitialState();
+    render();
+  }
+</script>

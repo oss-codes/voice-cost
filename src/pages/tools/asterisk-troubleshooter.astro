@@ -1,0 +1,125 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { asteriskSymptoms } from "../../data/planning";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const initial = asteriskSymptoms[0];
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Asterisk Voice AI Troubleshooter",
+  url: "https://voice.oss.codes/tools/asterisk-troubleshooter/",
+  applicationCategory: "DeveloperApplication",
+  description:
+    "Diagnose Asterisk one-way audio, failed SIP registration, 404 routing, ARI events, and codec problems.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Asterisk Voice AI Troubleshooter"
+  description="Troubleshoot Asterisk Voice AI calls with symptom-specific causes and commands for RTP, PJSIP, dialplan, ARI, NAT, and codec failures."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="Asterisk troubleshooting"
+    title="Start from the failed boundary, not a random config change."
+    description="Choose the symptom. The decision guide returns likely causes and the smallest commands needed to prove or reject them before you restart Asterisk."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="metric-tool trouble-tool" data-asterisk-trouble autocomplete="off">
+      <div class="metric-controls">
+        <label class="field">
+          <span class="field-label">Observed symptom</span>
+          <select name="symptom">
+            {asteriskSymptoms.map((symptom) => <option value={symptom.id}>{symptom.label}</option>)}
+          </select>
+        </label>
+        <div class="notice">
+          <strong>before editing</strong>
+          <span>Capture the SIP dialog, negotiated SDP, RTP direction, and Asterisk logs from one failed call.</span>
+        </div>
+        <div class="calc-actions">
+          <button class="button" type="button" data-copy-checks>Copy diagnostic checks</button>
+          <a class="button" href="/tools/asterisk-config-generator/">Open config generator</a>
+        </div>
+      </div>
+      <div class="metric-results trouble-results" aria-live="polite">
+        <span class="data-label">diagnostic path</span>
+        <h2 data-title>{initial.label}</h2>
+        <div class="trouble-columns">
+          <div>
+            <span class="data-label">likely causes</span>
+            <ol data-likely>{initial.likely.map((item) => <li>{item}</li>)}</ol>
+          </div>
+          <div>
+            <span class="data-label">checks in order</span>
+            <ol data-checks>{initial.checks.map((item) => <li><code>{item}</code></li>)}</ol>
+          </div>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="full guide"
+      title="Use the configuration guide when the symptom crosses boundaries"
+      description="PJSIP, dialplan, ARI, RTP, NAT, external media, WebSocket support, and security are documented together in the Asterisk deployment guide."
+    />
+    <a class="feature-link" href="/guides/asterisk-voice-ai-configuration/">
+      <span class="data-label">deployment guide</span>
+      <strong>Asterisk for Voice AI</strong>
+      <span>Open guide →</span>
+    </a>
+  </section>
+</BaseLayout>
+
+<script>
+  import { asteriskSymptoms } from "../../data/planning";
+
+  const form = document.querySelector("[data-asterisk-trouble]");
+  if (form instanceof HTMLFormElement) {
+    const selected = () => {
+      const field = form.elements.namedItem("symptom");
+      return asteriskSymptoms.find((item) => item.id === (field instanceof HTMLSelectElement ? field.value : "")) ?? asteriskSymptoms[0];
+    };
+    const renderList = (selector: string, items: readonly string[], code = false) => {
+      const list = form.querySelector(selector);
+      if (!(list instanceof HTMLOListElement)) return;
+      list.replaceChildren(...items.map((text) => {
+        const item = document.createElement("li");
+        if (code) {
+          const element = document.createElement("code");
+          element.textContent = text;
+          item.append(element);
+        } else item.textContent = text;
+        return item;
+      }));
+    };
+    const render = () => {
+      const item = selected();
+      const title = form.querySelector("[data-title]");
+      if (title instanceof HTMLElement) title.textContent = item.label;
+      renderList("[data-likely]", item.likely);
+      renderList("[data-checks]", item.checks, true);
+      window.history.replaceState(null, "", `${window.location.pathname}?symptom=${item.id}`);
+    };
+    const candidate = new URLSearchParams(window.location.search).get("symptom");
+    const select = form.elements.namedItem("symptom");
+    if (
+      select instanceof HTMLSelectElement &&
+      candidate &&
+      asteriskSymptoms.some((item) => item.id === candidate)
+    ) select.value = candidate;
+    form.addEventListener("change", render);
+    form.querySelector("[data-copy-checks]")?.addEventListener("click", async (event) => {
+      await navigator.clipboard.writeText(selected().checks.join("\n"));
+      if (event.currentTarget instanceof HTMLButtonElement) event.currentTarget.textContent = "Copied";
+    });
+    render();
+  }
+</script>

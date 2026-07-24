@@ -1,0 +1,41 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import ToolCard from "../../components/ToolCard.astro";
+import { industryTemplates } from "../../data/industry-templates";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  name: "Voice AI call-flow templates by industry",
+  description: "Practical Voice AI call-flow templates, integrations, metrics, and safety boundaries.",
+  dateModified: "2026-07-24",
+};
+---
+
+<BaseLayout
+  title="Voice AI Call-Flow Templates by Industry"
+  description="Voice AI call-flow templates for healthcare, real estate, payment reminders, restaurants, recruiting, and customer support."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="industry templates"
+    title="Start with a call that has a job."
+    description="Six focused flows with an opening, operational steps, integrations, metrics, and the cases that must leave automation."
+    parent={{ href: "/templates/", label: "templates" }}
+  />
+  <section class="section">
+    <SectionHead label="use cases" title="Choose a narrow first workflow" description="A useful production agent does one bounded job and has an honest transfer path." />
+    <div class="tool-grid">
+      {industryTemplates.map((template, index) => (
+        <ToolCard
+          index={String(index + 1).padStart(2, "0")}
+          title={template.name}
+          description={template.goal}
+          href={`/templates/${template.slug}/`}
+        />
+      ))}
+    </div>
+  </section>
+</BaseLayout>

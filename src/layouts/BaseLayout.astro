@@ -32,6 +32,8 @@ const sectionBreadcrumbs = [
   { prefix: "/pricing/", href: "/pricing/", name: "Voice AI pricing" },
   { prefix: "/tools/", href: "/tools/", name: "Voice AI tools" },
   { prefix: "/guides/", href: "/guides/", name: "Voice AI guides" },
+  { prefix: "/compliance/", href: "/compliance/", name: "Voice AI compliance" },
+  { prefix: "/templates/", href: "/templates/", name: "Voice AI templates" },
 ] as const;
 const parentBreadcrumb = sectionBreadcrumbs.find(
   (entry) => canonical.pathname.startsWith(entry.prefix) && canonical.pathname !== entry.href,

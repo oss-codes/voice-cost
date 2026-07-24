@@ -1,0 +1,173 @@
+export const SIP_PRICING_VERIFIED_AT = "2026-07-24";
+
+export type SipProviderQuote = {
+  readonly id: string;
+  readonly provider: string;
+  readonly country: "us" | "gb" | "au" | "in" | "sg";
+  readonly outboundPerMinute: number | null;
+  readonly inboundPerMinute: number | null;
+  readonly numberMonthly: number | null;
+  readonly sourceUrl: string;
+  readonly note: string;
+};
+
+export const sipCountries = [
+  { id: "us", name: "United States" },
+  { id: "gb", name: "United Kingdom" },
+  { id: "au", name: "Australia" },
+  { id: "in", name: "India" },
+  { id: "sg", name: "Singapore" },
+] as const;
+
+export const sipProviderQuotes = [
+  {
+    id: "twilio-us",
+    provider: "Twilio",
+    country: "us",
+    outboundPerMinute: 0.014,
+    inboundPerMinute: 0.0085,
+    numberMonthly: 1.15,
+    sourceUrl: "https://www.twilio.com/en-us/voice/pricing/us",
+    note: "Programmable Voice local call and local-number rates.",
+  },
+  {
+    id: "telnyx-us",
+    provider: "Telnyx",
+    country: "us",
+    outboundPerMinute: 0.005,
+    inboundPerMinute: 0.0032,
+    numberMonthly: 1,
+    sourceUrl: "https://telnyx.com/pricing/elastic-sip/",
+    note: "Published starting rates. Destination and carrier surcharges can change the bill.",
+  },
+  {
+    id: "plivo-us",
+    provider: "Plivo",
+    country: "us",
+    outboundPerMinute: 0.0046,
+    inboundPerMinute: 0.0028,
+    numberMonthly: 0.5,
+    sourceUrl: "https://www.plivo.com/sip-trunking/pricing/",
+    note: "Published US local SIP trunking rates.",
+  },
+  {
+    id: "twilio-gb",
+    provider: "Twilio",
+    country: "gb",
+    outboundPerMinute: 0.0158,
+    inboundPerMinute: 0.01,
+    numberMonthly: 3.5,
+    sourceUrl: "https://www.twilio.com/en-us/voice/pricing/gb",
+    note: "UK local call and local-number rates.",
+  },
+  {
+    id: "telnyx-gb-quote",
+    provider: "Telnyx quote",
+    country: "gb",
+    outboundPerMinute: null,
+    inboundPerMinute: null,
+    numberMonthly: null,
+    sourceUrl: "https://telnyx.com/pricing/elastic-sip/",
+    note: "Enter the destination-specific quote from your Telnyx account or rate sheet.",
+  },
+  {
+    id: "plivo-gb-quote",
+    provider: "Plivo quote",
+    country: "gb",
+    outboundPerMinute: null,
+    inboundPerMinute: null,
+    numberMonthly: null,
+    sourceUrl: "https://www.plivo.com/sip-trunking/pricing/",
+    note: "Enter the route-specific quote. Public US pricing must not be reused for the UK.",
+  },
+  {
+    id: "twilio-au",
+    provider: "Twilio",
+    country: "au",
+    outboundPerMinute: 0.0252,
+    inboundPerMinute: 0.01,
+    numberMonthly: 3,
+    sourceUrl: "https://www.twilio.com/en-us/voice/pricing/au",
+    note: "Australia local call and local-number rates.",
+  },
+  {
+    id: "telnyx-au-quote",
+    provider: "Telnyx quote",
+    country: "au",
+    outboundPerMinute: null,
+    inboundPerMinute: null,
+    numberMonthly: null,
+    sourceUrl: "https://telnyx.com/pricing/elastic-sip/",
+    note: "Enter your current Australian route quote.",
+  },
+  {
+    id: "plivo-au-quote",
+    provider: "Plivo quote",
+    country: "au",
+    outboundPerMinute: null,
+    inboundPerMinute: null,
+    numberMonthly: null,
+    sourceUrl: "https://www.plivo.com/sip-trunking/pricing/",
+    note: "Enter your current Australian route quote.",
+  },
+  {
+    id: "twilio-in",
+    provider: "Twilio",
+    country: "in",
+    outboundPerMinute: 0.0699,
+    inboundPerMinute: null,
+    numberMonthly: null,
+    sourceUrl: "https://www.twilio.com/en-us/voice/pricing/in",
+    note: "Outbound local termination only. The public page does not list a local inbound number.",
+  },
+  {
+    id: "exotel-in-quote",
+    provider: "Exotel quote",
+    country: "in",
+    outboundPerMinute: null,
+    inboundPerMinute: null,
+    numberMonthly: null,
+    sourceUrl: "https://exotel.com/pricing/business-phone-system/",
+    note: "Exotel publishes plan credits and rental, while streaming pricing requires a quote.",
+  },
+  {
+    id: "plivo-in-quote",
+    provider: "Plivo quote",
+    country: "in",
+    outboundPerMinute: null,
+    inboundPerMinute: null,
+    numberMonthly: null,
+    sourceUrl: "https://www.plivo.com/pricing/",
+    note: "Enter the rate from an India-region or enterprise quote.",
+  },
+  {
+    id: "twilio-sg",
+    provider: "Twilio",
+    country: "sg",
+    outboundPerMinute: 0.0423,
+    inboundPerMinute: null,
+    numberMonthly: null,
+    sourceUrl: "https://www.twilio.com/en-us/voice/pricing/sg",
+    note: "Outbound local termination only. A local inbound number is not included.",
+  },
+  {
+    id: "telnyx-sg-quote",
+    provider: "Telnyx quote",
+    country: "sg",
+    outboundPerMinute: null,
+    inboundPerMinute: null,
+    numberMonthly: null,
+    sourceUrl: "https://telnyx.com/pricing/elastic-sip/",
+    note: "Enter your current Singapore route quote.",
+  },
+  {
+    id: "plivo-sg-quote",
+    provider: "Plivo quote",
+    country: "sg",
+    outboundPerMinute: null,
+    inboundPerMinute: null,
+    numberMonthly: null,
+    sourceUrl: "https://www.plivo.com/sip-trunking/pricing/",
+    note: "Enter your current Singapore route quote.",
+  },
+] as const satisfies readonly SipProviderQuote[];

@@ -1,0 +1,219 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { analyzeLatencyTrace } from "../../lib/expansion-tools";
+
+const initialTrace = {
+  speechEndMs: 0,
+  endpointMs: 180,
+  transcriptMs: 260,
+  firstTokenMs: 540,
+  firstAudioMs: 690,
+  playableAudioMs: 760,
+};
+const initialResult = analyzeLatencyTrace(initialTrace);
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Voice AI Latency Benchmark Lab",
+  url: "https://voice.oss.codes/tools/voice-ai-latency-benchmark/",
+  applicationCategory: "DeveloperApplication",
+  description:
+    "Record or import real Voice AI trace timestamps and calculate latency across endpointing, transcription, model, speech, and playback.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Voice AI Latency Benchmark Lab"
+  description="Measure Voice AI latency from speech end to endpointing, final transcript, first model token, first audio, and playable response."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="latency benchmark lab"
+    title="Replace a latency guess with 6 timestamps."
+    description="Enter production trace offsets, import JSON, or use the browser stopwatch during a test call. The result keeps each boundary separate so the slowest service is visible."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="builder-shell latency-lab" data-latency-lab autocomplete="off">
+      <div class="builder-controls">
+        <div class="calc-actions trace-actions">
+          <button class="button button-primary" type="button" data-start-trace>Start at speech end</button>
+          <span class="output-status" data-stopwatch-status>Stopwatch idle</span>
+        </div>
+        {
+          [
+            ["speechEndMs", "Speech ended"],
+            ["endpointMs", "Endpoint detected"],
+            ["transcriptMs", "Final transcript"],
+            ["firstTokenMs", "First model token"],
+            ["firstAudioMs", "First audio byte"],
+            ["playableAudioMs", "First playable audio"],
+          ].map(([name, label]) => (
+            <label class="field trace-field">
+              <span class="field-label">{label}</span>
+              <span class="trace-input-row">
+                <input name={name} type="number" min="0" max="300000" value={initialTrace[name as keyof typeof initialTrace]} inputmode="numeric" />
+                {name !== "speechEndMs" && <button type="button" data-mark={name}>Mark now</button>}
+              </span>
+            </label>
+          ))
+        }
+        <p class="form-error" data-form-error role="alert" aria-live="assertive" hidden></p>
+        <label class="field">
+          <span class="field-label">Trace JSON</span>
+          <textarea name="traceJson" rows="7" spellcheck="false">{JSON.stringify(initialTrace, null, 2)}</textarea>
+        </label>
+        <div class="calc-actions">
+          <button class="button" type="button" data-import-json>Import JSON</button>
+          <button class="button" type="button" data-download-trace>Download trace</button>
+          <button class="button" type="reset">Reset</button>
+        </div>
+      </div>
+      <div class="builder-output latency-output" aria-live="polite">
+        <span class="data-label">speech end to playable audio</span>
+        <strong class="metric-primary" data-total>{initialResult.totalMs} ms</strong>
+        <p class="metric-explanation">
+          Slowest measured boundary: <strong data-slowest>{initialResult.slowest.label}</strong> at
+          <strong data-slowest-ms>{initialResult.slowest.ms} ms</strong>.
+        </p>
+        <div class="trace-waterfall">
+          {
+            initialResult.components.map((component) => (
+              <div>
+                <span>{component.label}</span>
+                <span class="trace-bar"><i style={`--trace-width: ${(component.ms / initialResult.totalMs) * 100}%`}></i></span>
+                <strong>{component.ms} ms</strong>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="trace contract"
+      title="Use the same event definition in every provider test"
+      description="Start the clock when caller speech actually ends. Measure endpoint decision, final transcript, first model token, first audio byte received by the runtime, and first audio that can be played to the caller."
+    />
+  </section>
+</BaseLayout>
+
+<script>
+  import { z } from "zod";
+
+  import { analyzeLatencyTrace } from "../../lib/expansion-tools";
+
+  const form = document.querySelector("[data-latency-lab]");
+  const TraceSchema = z.object({
+    speechEndMs: z.number().min(0).max(300_000),
+    endpointMs: z.number().min(0).max(300_000),
+    transcriptMs: z.number().min(0).max(300_000),
+    firstTokenMs: z.number().min(0).max(300_000),
+    firstAudioMs: z.number().min(0).max(300_000),
+    playableAudioMs: z.number().min(0).max(300_000),
+  });
+
+  if (form instanceof HTMLFormElement) {
+    const names = ["speechEndMs", "endpointMs", "transcriptMs", "firstTokenMs", "firstAudioMs", "playableAudioMs"] as const;
+    let traceStartedAt: number | undefined;
+    const input = (name: typeof names[number]) => form.elements.namedItem(name);
+    const read = () => Object.fromEntries(names.map((name) => {
+      const field = input(name);
+      return [name, field instanceof HTMLInputElement ? Number(field.value) : Number.NaN];
+    }));
+    const setOutput = (selector: string, text: string) => {
+      const element = form.querySelector(selector);
+      if (element instanceof HTMLElement) element.textContent = text;
+    };
+    const render = () => {
+      const parsed = TraceSchema.safeParse(read());
+      const error = form.querySelector("[data-form-error]");
+      let result;
+      try {
+        result = parsed.success ? analyzeLatencyTrace(parsed.data) : undefined;
+      } catch {
+        result = undefined;
+      }
+      if (!result) {
+        if (error instanceof HTMLElement) {
+          error.textContent = "Use chronological timestamps from speech end through playable audio.";
+          error.hidden = false;
+        }
+        setOutput("[data-total]", "Unavailable");
+        return;
+      }
+      if (error instanceof HTMLElement) {
+        error.textContent = "";
+        error.hidden = true;
+      }
+      setOutput("[data-total]", `${result.totalMs.toLocaleString("en-US")} ms`);
+      setOutput("[data-slowest]", result.slowest.label);
+      setOutput("[data-slowest-ms]", `${result.slowest.ms.toLocaleString("en-US")} ms`);
+      form.querySelectorAll<HTMLElement>(".trace-waterfall > div").forEach((row, index) => {
+        const component = result.components[index];
+        const bar = row.querySelector("i");
+        const value = row.querySelector("strong");
+        if (bar instanceof HTMLElement && component) {
+          bar.style.setProperty("--trace-width", `${(component.ms / Math.max(result.totalMs, 1)) * 100}%`);
+        }
+        if (value instanceof HTMLElement && component) value.textContent = `${component.ms} ms`;
+      });
+      const json = form.elements.namedItem("traceJson");
+      if (json instanceof HTMLTextAreaElement) json.value = JSON.stringify(parsed.data, null, 2);
+    };
+    form.addEventListener("input", (event) => {
+      if (event.target instanceof HTMLTextAreaElement) return;
+      render();
+    });
+    form.addEventListener("reset", () => window.setTimeout(render));
+    form.querySelector("[data-start-trace]")?.addEventListener("click", () => {
+      traceStartedAt = performance.now();
+      const speechEnd = input("speechEndMs");
+      if (speechEnd instanceof HTMLInputElement) speechEnd.value = "0";
+      setOutput("[data-stopwatch-status]", "Stopwatch running");
+    });
+    form.querySelectorAll<HTMLButtonElement>("[data-mark]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (traceStartedAt === undefined) return;
+        const field = input(button.dataset["mark"] as typeof names[number]);
+        if (field instanceof HTMLInputElement) field.value = String(Math.round(performance.now() - traceStartedAt));
+        render();
+      });
+    });
+    form.querySelector("[data-import-json]")?.addEventListener("click", () => {
+      const textarea = form.elements.namedItem("traceJson");
+      if (!(textarea instanceof HTMLTextAreaElement)) return;
+      try {
+        const parsed = TraceSchema.parse(JSON.parse(textarea.value));
+        for (const name of names) {
+          const field = input(name);
+          if (field instanceof HTMLInputElement) field.value = String(parsed[name]);
+        }
+        render();
+      } catch {
+        const error = form.querySelector("[data-form-error]");
+        if (error instanceof HTMLElement) {
+          error.textContent = "Paste a valid trace JSON object with all 6 timestamps.";
+          error.hidden = false;
+        }
+      }
+    });
+    form.querySelector("[data-download-trace]")?.addEventListener("click", () => {
+      const parsed = TraceSchema.safeParse(read());
+      if (!parsed.success) return;
+      const url = URL.createObjectURL(new Blob([JSON.stringify(parsed.data, null, 2)], { type: "application/json" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "voice-ai-latency-trace.json";
+      anchor.click();
+      URL.revokeObjectURL(url);
+    });
+    render();
+  }
+</script>

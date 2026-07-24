@@ -1,0 +1,59 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { industryTemplates } from "../../data/industry-templates";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export function getStaticPaths() {
+  return industryTemplates.map((template) => ({
+    params: { slug: template.slug },
+    props: { template },
+  }));
+}
+
+const { template } = Astro.props;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  headline: template.title,
+  description: template.goal,
+  datePublished: "2026-07-24",
+  dateModified: "2026-07-24",
+  author: { "@type": "Person", name: "Himanshu Maurya", alternateName: "codingstark" },
+};
+---
+
+<BaseLayout title={template.title} description={template.goal} structuredData={structuredData}>
+  <PageHero eyebrow="industry call flow" title={`${template.name}.`} description={template.goal} parent={{ href: "/templates/", label: "templates" }} />
+
+  <section class="section">
+    <SectionHead label="opening" title="Set context before collecting data" description={template.opening} />
+    <ol class="flow-steps">
+      {template.flow.map((step, index) => <li><span>{index + 1}</span><strong>{step}</strong></li>)}
+    </ol>
+  </section>
+
+  <section class="section template-columns">
+    <div>
+      <h2>Connect these systems</h2>
+      <ul>{template.integrations.map((item) => <li>{item}</li>)}</ul>
+    </div>
+    <div>
+      <h2>Measure the outcome</h2>
+      <ul>{template.metrics.map((item) => <li>{item}</li>)}</ul>
+    </div>
+    <div>
+      <h2>Keep out of automation</h2>
+      <ul>{template.watch.map((item) => <li>{item}</li>)}</ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead label="make it yours" title="Turn this outline into a testable flow" description="Build the sequence, define launch gates, then check the local calling rules." />
+    <div class="cluster">
+      <a class="button button-primary" href="/tools/voice-ai-call-flow-builder/">open call-flow builder →</a>
+      <a class="button" href="/tools/voice-ai-production-readiness/">check readiness →</a>
+      <a class="button" href="/compliance/">country guides →</a>
+    </div>
+  </section>
+</BaseLayout>

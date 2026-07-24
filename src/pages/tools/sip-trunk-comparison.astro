@@ -1,0 +1,246 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import {
+  SIP_PRICING_VERIFIED_AT,
+  sipCountries,
+  sipProviderQuotes,
+} from "../../data/sip-comparison";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { estimateSipQuote } from "../../lib/expansion-tools";
+
+const initialQuotes = sipProviderQuotes.filter((quote) => quote.country === "us");
+const initialWorkload = { outboundMinutes: 10_000, inboundMinutes: 5_000, phoneNumbers: 2 };
+const initialResults = initialQuotes.map((quote) => ({
+  quote,
+  result: estimateSipQuote({ ...initialWorkload, ...quote }),
+}));
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "SIP Trunk Cost Comparison",
+  url: "https://voice.oss.codes/tools/sip-trunk-comparison/",
+  applicationCategory: "BusinessApplication",
+  description:
+    "Compare source-linked SIP trunk costs for Twilio, Telnyx, Plivo, Exotel, and custom country quotes.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="SIP Trunk Cost Comparison by Country"
+  description="Compare SIP trunk inbound, outbound, and phone-number costs by country using official public rates or your own carrier quotes."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="SIP trunk comparison"
+    title="Compare the carrier quote behind the Voice AI minute."
+    description="Normalize outbound minutes, inbound minutes, and phone-number rental. Public rates are filled only where the source supports them; missing country routes stay visibly unpriced."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="comparison-tool" data-sip-comparison autocomplete="off">
+      <div class="comparison-inputs">
+        <label class="field">
+          <span class="field-label">Country</span>
+          <select name="country">
+            {sipCountries.map((country) => <option value={country.id}>{country.name}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Outbound minutes</span>
+          <input name="outbound" type="number" min="0" max="10000000" value="10000" inputmode="numeric" />
+        </label>
+        <label class="field">
+          <span class="field-label">Inbound minutes</span>
+          <input name="inbound" type="number" min="0" max="10000000" value="5000" inputmode="numeric" />
+        </label>
+        <label class="field">
+          <span class="field-label">Phone numbers</span>
+          <input name="numbers" type="number" min="0" max="100000" value="2" inputmode="numeric" />
+        </label>
+        <p class="form-error" data-form-error role="alert" aria-live="assertive" hidden></p>
+        <button class="button" type="reset">Reset comparison</button>
+      </div>
+
+      <div class="quote-grid" aria-live="polite">
+        {
+          initialResults.map(({ quote, result }, index) => (
+            <article class="quote-card" data-quote-card={index}>
+              <header>
+                <div>
+                  <span class="data-label">provider quote</span>
+                  <h2 data-provider>{quote.provider}</h2>
+                </div>
+                <span class="winner-badge" data-winner hidden>lowest</span>
+              </header>
+              <div class="quote-rate-grid">
+                <label class="field">
+                  <span class="field-label">Outbound / min</span>
+                  <input data-rate="outbound" type="number" min="0" max="10" step="0.0001" value={quote.outboundPerMinute ?? ""} placeholder="Enter quote…" inputmode="decimal" />
+                </label>
+                <label class="field">
+                  <span class="field-label">Inbound / min</span>
+                  <input data-rate="inbound" type="number" min="0" max="10" step="0.0001" value={quote.inboundPerMinute ?? ""} placeholder="Enter quote…" inputmode="decimal" />
+                </label>
+                <label class="field">
+                  <span class="field-label">Number / month</span>
+                  <input data-rate="number" type="number" min="0" max="10000" step="0.01" value={quote.numberMonthly ?? ""} placeholder="Enter quote…" inputmode="decimal" />
+                </label>
+              </div>
+              <strong class="quote-total" data-total>
+                {result ? `$${result.monthly.toFixed(2)}` : "Quote required"}
+              </strong>
+              <p data-note>{quote.note}</p>
+              <a class="source-badge" data-source href={quote.sourceUrl}>Open provider source ↗</a>
+            </article>
+          ))
+        }
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="normalization"
+      title="What the ranking includes"
+      description="The total includes the entered local inbound, local outbound, and monthly number rental only. Taxes, route surcharges, recording, media streaming, CPS upgrades, emergency calling, and committed-use discounts remain outside the comparison."
+    />
+    <div class="notice">
+      <strong>snapshot</strong>
+      <span>
+        Public data verified {SIP_PRICING_VERIFIED_AT}. “Starting at” rates can differ from your
+        destination-level invoice. Replace every field with an account-specific quote before buying.
+      </span>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { z } from "zod";
+
+  import { sipProviderQuotes } from "../../data/sip-comparison";
+  import { estimateSipQuote } from "../../lib/expansion-tools";
+
+  const form = document.querySelector("[data-sip-comparison]");
+  const WorkloadSchema = z.object({
+    outboundMinutes: z.number().int().min(0).max(10_000_000),
+    inboundMinutes: z.number().int().min(0).max(10_000_000),
+    phoneNumbers: z.number().int().min(0).max(100_000),
+  }).refine((value) => value.outboundMinutes + value.inboundMinutes > 0, {
+    message: "Enter at least 1 inbound or outbound minute.",
+  });
+  const money = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  });
+
+  if (form instanceof HTMLFormElement) {
+    const textValue = (name: string) => {
+      const field = form.elements.namedItem(name);
+      return field instanceof HTMLInputElement || field instanceof HTMLSelectElement ? field.value : "";
+    };
+    const cards = () => Array.from(form.querySelectorAll<HTMLElement>("[data-quote-card]"));
+    const readRate = (card: HTMLElement, name: string) => {
+      const input = card.querySelector(`[data-rate="${name}"]`);
+      if (!(input instanceof HTMLInputElement) || input.value.trim() === "") return null;
+      const value = Number(input.value);
+      return Number.isFinite(value) && value >= 0 ? value : null;
+    };
+    const setCardQuote = (card: HTMLElement, index: number) => {
+      const country = textValue("country");
+      const quote = sipProviderQuotes.filter((item) => item.country === country)[index];
+      if (!quote) return;
+      card.dataset["quoteId"] = quote.id;
+      const provider = card.querySelector("[data-provider]");
+      const note = card.querySelector("[data-note]");
+      const source = card.querySelector("[data-source]");
+      if (provider instanceof HTMLElement) provider.textContent = quote.provider;
+      if (note instanceof HTMLElement) note.textContent = quote.note;
+      if (source instanceof HTMLAnchorElement) source.href = quote.sourceUrl;
+      for (const [name, value] of [
+        ["outbound", quote.outboundPerMinute],
+        ["inbound", quote.inboundPerMinute],
+        ["number", quote.numberMonthly],
+      ] as const) {
+        const input = card.querySelector(`[data-rate="${name}"]`);
+        if (input instanceof HTMLInputElement) input.value = value === null ? "" : String(value);
+      }
+    };
+    const render = () => {
+      const parsed = WorkloadSchema.safeParse({
+        outboundMinutes: Number(textValue("outbound")),
+        inboundMinutes: Number(textValue("inbound")),
+        phoneNumbers: Number(textValue("numbers")),
+      });
+      const error = form.querySelector("[data-form-error]");
+      if (!parsed.success) {
+        if (error instanceof HTMLElement) {
+          error.textContent = "Enter non-negative workload values and at least 1 call minute.";
+          error.hidden = false;
+        }
+        return;
+      }
+      if (error instanceof HTMLElement) {
+        error.textContent = "";
+        error.hidden = true;
+      }
+      const results = cards().map((card) => {
+        const result = estimateSipQuote({
+          ...parsed.data,
+          outboundPerMinute: readRate(card, "outbound"),
+          inboundPerMinute: readRate(card, "inbound"),
+          numberMonthly: readRate(card, "number"),
+        });
+        const total = card.querySelector("[data-total]");
+        if (total instanceof HTMLElement) total.textContent = result ? money.format(result.monthly) : "Quote required";
+        return { card, result };
+      });
+      const priced = results.filter((entry) => entry.result !== null);
+      const lowest = priced.length > 0
+        ? Math.min(...priced.map((entry) => entry.result?.monthly ?? Number.POSITIVE_INFINITY))
+        : Number.NaN;
+      for (const { card, result } of results) {
+        const badge = card.querySelector("[data-winner]");
+        if (badge instanceof HTMLElement) badge.hidden = result === null || result.monthly !== lowest;
+      }
+      const params = new URLSearchParams({
+        country: textValue("country"),
+        outbound: textValue("outbound"),
+        inbound: textValue("inbound"),
+        numbers: textValue("numbers"),
+      });
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    };
+    const setInitialState = () => {
+      const params = new URLSearchParams(window.location.search);
+      for (const name of ["country", "outbound", "inbound", "numbers"]) {
+        const field = form.elements.namedItem(name);
+        const candidate = params.get(name);
+        if (candidate === null) continue;
+        if (field instanceof HTMLInputElement) field.value = candidate;
+        if (
+          field instanceof HTMLSelectElement &&
+          Array.from(field.options).some((option) => option.value === candidate)
+        ) field.value = candidate;
+      }
+      cards().forEach(setCardQuote);
+    };
+    form.addEventListener("input", render);
+    form.addEventListener("change", (event) => {
+      const target = event.target;
+      if (target instanceof HTMLSelectElement && target.name === "country") {
+        cards().forEach(setCardQuote);
+      }
+      render();
+    });
+    form.addEventListener("reset", () => window.setTimeout(() => {
+      cards().forEach(setCardQuote);
+      render();
+    }));
+    setInitialState();
+    render();
+  }
+</script>

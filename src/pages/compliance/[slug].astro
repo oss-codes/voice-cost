@@ -1,0 +1,55 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { COMPLIANCE_VERIFIED_AT, complianceGuides } from "../../data/compliance";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export function getStaticPaths() {
+  return complianceGuides.map((guide) => ({ params: { slug: guide.slug }, props: { guide } }));
+}
+
+const { guide } = Astro.props;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  headline: guide.title,
+  description: guide.summary,
+  datePublished: COMPLIANCE_VERIFIED_AT,
+  dateModified: COMPLIANCE_VERIFIED_AT,
+  author: { "@type": "Person", name: "Himanshu Maurya", alternateName: "codingstark" },
+};
+---
+
+<BaseLayout title={guide.title} description={guide.summary} structuredData={structuredData}>
+  <PageHero
+    eyebrow="country checklist"
+    title={`${guide.name} Voice AI calls.`}
+    description={guide.summary}
+    parent={{ href: "/compliance/", label: "compliance" }}
+  />
+
+  <section class="section">
+    <SectionHead
+      label={`reviewed ${COMPLIANCE_VERIFIED_AT}`}
+      title="Pre-launch checklist"
+      description="Use this to frame a legal and carrier review. It is not a substitute for advice on your campaign."
+    />
+    <div class="notice-card"><strong>Not legal advice.</strong><span>Recheck every rule and source before launch.</span></div>
+    <ol class="checklist-cards">
+      {guide.checks.map((check, index) => (
+        <li>
+          <span class="data-label">{String(index + 1).padStart(2, "0")}</span>
+          <div><h2>{check.title}</h2><p>{check.detail}</p></div>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <section class="section">
+    <SectionHead label="primary sources" title="Read the regulator material" description="Guidance can change. Follow the current source before making a legal decision." />
+    <ul class="source-list">
+      {guide.sources.map((source) => <li><a class="source-badge" href={source.url}>{source.label} ↗</a></li>)}
+      <li><a class="source-badge" href="/tools/voice-ai-production-readiness/">run production readiness check →</a></li>
+    </ul>
+  </section>
+</BaseLayout>

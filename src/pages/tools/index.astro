@@ -55,6 +55,46 @@ const tools = [
     description: "Generate safe PJSIP, dialplan, RTP, ARI, and external-media configuration files.",
     href: "/tools/asterisk-config-generator/",
   },
+  {
+    title: "SIP trunk comparison",
+    description: "Compare editable inbound, outbound, and phone-number assumptions by country.",
+    href: "/tools/sip-trunk-comparison/",
+  },
+  {
+    title: "Architecture builder",
+    description: "Map telephony, runtime, model, deployment, and region into an exportable call path.",
+    href: "/tools/voice-ai-architecture-builder/",
+  },
+  {
+    title: "Latency benchmark lab",
+    description: "Measure a real turn trace from speech end through first playable agent audio.",
+    href: "/tools/voice-ai-latency-benchmark/",
+  },
+  {
+    title: "Production readiness",
+    description: "Score compliance, security, reliability, observability, capacity, and launch gates.",
+    href: "/tools/voice-ai-production-readiness/",
+  },
+  {
+    title: "Asterisk troubleshooter",
+    description: "Turn a common SIP, RTP, ARI, or codec symptom into focused diagnostic checks.",
+    href: "/tools/asterisk-troubleshooter/",
+  },
+  {
+    title: "Call-flow builder",
+    description: "Design, reorder, share, and export a bounded Voice AI conversation flow.",
+    href: "/tools/voice-ai-call-flow-builder/",
+  },
+  {
+    title: "Voice quality tester",
+    description: "Inspect local audio for level, silence, clipping, sample rate, and DC offset.",
+    href: "/tools/voice-quality-tester/",
+  },
+  {
+    title: "Pricing snapshot history",
+    description: "Review when public rate assumptions entered the repository-backed dataset.",
+    href: "/pricing/history/",
+  },
 ] as const;
 ---
 
@@ -72,7 +112,7 @@ const tools = [
   <section class="section">
     <SectionHead
       label="toolkit"
-      title="10 calculations and builders before launch"
+      title="18 calculations, checks, and builders before launch"
       description="Each tool uses visible assumptions, responds instantly in the browser, and links back to its pricing, formula, or configuration source."
     />
     <div class="tool-grid">

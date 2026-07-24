@@ -1,0 +1,185 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Voice AI Audio Quality Tester",
+  url: "https://voice.oss.codes/tools/voice-quality-tester/",
+  applicationCategory: "MultimediaApplication",
+  description:
+    "Analyze local audio duration, sample rate, channels, peak, RMS, clipping, silence, and DC offset for Voice AI testing.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Voice AI Audio Quality Tester"
+  description="Upload or record Voice AI audio and inspect duration, sample rate, channels, loudness, peak, clipping, silence, and DC offset locally in your browser."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="audio quality tester"
+    title="Inspect the audio before blaming the model."
+    description="Upload a call sample or record your microphone. The browser decodes it locally and reports signal-level problems that commonly damage transcription and playback."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <div class="audio-tool" data-audio-quality>
+      <div class="audio-controls">
+        <label class="file-drop">
+          <span class="field-label">Audio file</span>
+          <strong>Choose WAV, MP3, M4A, OGG, or WebM</strong>
+          <input type="file" accept="audio/*" data-audio-file />
+          <small>Maximum 50 MB. The file never leaves this browser.</small>
+        </label>
+        <div class="calc-actions">
+          <button class="button button-primary" type="button" data-start-mic>Start microphone recording</button>
+          <button class="button" type="button" data-stop-mic disabled>Stop recording</button>
+        </div>
+        <p class="notice" aria-live="polite"><strong>local only</strong><span data-audio-status>No audio selected.</span></p>
+        <p class="form-error" data-audio-error role="alert" aria-live="assertive" hidden></p>
+      </div>
+      <div class="audio-results" data-audio-results hidden aria-live="polite">
+        <div class="output-heading">
+          <div><span class="data-label">decoded signal</span><h2 data-file-name>Audio analysis</h2></div>
+          <span class="output-status" data-quality-band>Measured</span>
+        </div>
+        <div class="audio-metrics">
+          <div><span class="data-label">duration</span><strong data-duration>0 s</strong></div>
+          <div><span class="data-label">sample rate</span><strong data-sample-rate>0 Hz</strong></div>
+          <div><span class="data-label">channels</span><strong data-channels>0</strong></div>
+          <div><span class="data-label">RMS level</span><strong data-rms>0 dBFS</strong></div>
+          <div><span class="data-label">peak level</span><strong data-peak>0 dBFS</strong></div>
+          <div><span class="data-label">clipping</span><strong data-clipping>0%</strong></div>
+          <div><span class="data-label">near silence</span><strong data-silence>0%</strong></div>
+          <div><span class="data-label">DC offset</span><strong data-dc>0</strong></div>
+        </div>
+        <div class="missing-gates">
+          <span class="data-label">signal observations</span>
+          <ul data-audio-observations></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="scope"
+      title="Signal checks are not a MOS score"
+      description="This tool detects basic amplitude, silence, clipping, channel, and sample-rate issues. It does not measure packet loss, jitter, echo, intelligibility, transcription accuracy, or perceptual call quality."
+    />
+  </section>
+</BaseLayout>
+
+<script>
+  import { analyzeAudioSamples } from "../../lib/expansion-tools";
+
+  const tool = document.querySelector("[data-audio-quality]");
+  if (tool instanceof HTMLElement) {
+    const fileInput = tool.querySelector("[data-audio-file]");
+    const startButton = tool.querySelector("[data-start-mic]");
+    const stopButton = tool.querySelector("[data-stop-mic]");
+    const results = tool.querySelector("[data-audio-results]");
+    let recorder: MediaRecorder | undefined;
+    let stream: MediaStream | undefined;
+    let chunks: Blob[] = [];
+    const text = (selector: string, value: string) => {
+      const element = tool.querySelector(selector);
+      if (element instanceof HTMLElement) element.textContent = value;
+    };
+    const setError = (message = "") => {
+      const error = tool.querySelector("[data-audio-error]");
+      if (error instanceof HTMLElement) {
+        error.textContent = message;
+        error.hidden = message === "";
+      }
+    };
+    const observations = (analysis: ReturnType<typeof analyzeAudioSamples>) => {
+      const items: string[] = [];
+      if (analysis.clippingPercent > 0.1) items.push("Clipped samples are present. Reduce input gain before provider testing.");
+      if (analysis.rmsDbfs < -35) items.push("Average level is quiet and may reduce transcription reliability.");
+      if (analysis.rmsDbfs > -8) items.push("Average level is unusually hot and leaves little headroom.");
+      if (analysis.silencePercent > 65) items.push("Most decoded samples are near silence. Check endpointing and media transport.");
+      if (Math.abs(analysis.dcOffset) > 0.02) items.push("A measurable DC offset is present.");
+      if (analysis.sampleRate < 16_000) items.push("Sample rate is below 16 kHz. Confirm the speech provider supports it.");
+      if (items.length === 0) items.push("No basic amplitude, clipping, silence, or DC-offset warning crossed this tool’s thresholds.");
+      return items;
+    };
+    const analyzeBlob = async (blob: Blob, name: string) => {
+      setError();
+      if (blob.size > 50 * 1024 * 1024) {
+        setError("Choose an audio file smaller than 50 MB.");
+        return;
+      }
+      text("[data-audio-status]", "Decoding audio…");
+      try {
+        const context = new AudioContext();
+        const buffer = await context.decodeAudioData(await blob.arrayBuffer());
+        const analysis = analyzeAudioSamples({
+          samples: buffer.getChannelData(0),
+          sampleRate: buffer.sampleRate,
+          durationSeconds: buffer.duration,
+          channels: buffer.numberOfChannels,
+        });
+        await context.close();
+        text("[data-file-name]", name);
+        text("[data-duration]", `${analysis.durationSeconds.toFixed(2)} s`);
+        text("[data-sample-rate]", `${analysis.sampleRate.toLocaleString("en-US")} Hz`);
+        text("[data-channels]", String(analysis.channels));
+        text("[data-rms]", `${analysis.rmsDbfs.toFixed(1)} dBFS`);
+        text("[data-peak]", `${analysis.peakDbfs.toFixed(1)} dBFS`);
+        text("[data-clipping]", `${analysis.clippingPercent.toFixed(2)}%`);
+        text("[data-silence]", `${analysis.silencePercent.toFixed(1)}%`);
+        text("[data-dc]", analysis.dcOffset.toFixed(4));
+        const list = tool.querySelector("[data-audio-observations]");
+        if (list instanceof HTMLUListElement) {
+          list.replaceChildren(...observations(analysis).map((message) => {
+            const item = document.createElement("li");
+            item.textContent = message;
+            return item;
+          }));
+        }
+        text("[data-quality-band]", analysis.clippingPercent > 0.1 ? "Needs gain review" : "Basic signal check complete");
+        text("[data-audio-status]", "Analysis complete. Audio stayed in this browser.");
+        if (results instanceof HTMLElement) results.hidden = false;
+      } catch {
+        setError("This browser could not decode the selected audio. Try WAV, MP3, M4A, OGG, or WebM.");
+        text("[data-audio-status]", "Audio analysis failed.");
+      }
+    };
+    if (fileInput instanceof HTMLInputElement) {
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files?.[0];
+        if (file) void analyzeBlob(file, file.name);
+      });
+    }
+    startButton?.addEventListener("click", async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recorder = new MediaRecorder(stream);
+        chunks = [];
+        recorder.addEventListener("dataavailable", (event) => chunks.push(event.data));
+        recorder.addEventListener("stop", () => {
+          const blob = new Blob(chunks, { type: recorder?.mimeType || "audio/webm" });
+          void analyzeBlob(blob, "Microphone recording");
+          stream?.getTracks().forEach((track) => track.stop());
+        });
+        recorder.start();
+        if (startButton instanceof HTMLButtonElement) startButton.disabled = true;
+        if (stopButton instanceof HTMLButtonElement) stopButton.disabled = false;
+        text("[data-audio-status]", "Recording microphone locally…");
+      } catch {
+        setError("Microphone access was unavailable. Upload an audio file instead.");
+      }
+    });
+    stopButton?.addEventListener("click", () => {
+      if (recorder?.state === "recording") recorder.stop();
+      if (startButton instanceof HTMLButtonElement) startButton.disabled = false;
+      if (stopButton instanceof HTMLButtonElement) stopButton.disabled = true;
+    });
+  }
+</script>

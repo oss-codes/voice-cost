@@ -16,6 +16,13 @@ Public pricing data is a dated snapshot, currently verified 2026-07-24. Treat ca
 - [Country telephony cost calculator](https://voice.oss.codes/tools/country-telephony-cost-calculator/): Model source-linked local, mobile, and inbound carrier assumptions for the United States, United Kingdom, Australia, India, and Singapore.
 - [Voice AI stack recommender](https://voice.oss.codes/tools/voice-ai-stack-recommender/): Rank managed, hybrid, and self-hosted stacks with a transparent deterministic score.
 - [Asterisk configuration generator](https://voice.oss.codes/tools/asterisk-config-generator/): Generate PJSIP, dialplan, RTP, HTTP, ARI, and external-media files without collecting passwords.
+- [SIP trunk comparison](https://voice.oss.codes/tools/sip-trunk-comparison/): Compare editable inbound, outbound, and number assumptions by country.
+- [Voice AI architecture builder](https://voice.oss.codes/tools/voice-ai-architecture-builder/): Export a provider-neutral call-path diagram and JSON plan.
+- [Voice AI latency benchmark](https://voice.oss.codes/tools/voice-ai-latency-benchmark/): Analyze chronological turn traces and identify the slowest boundary.
+- [Voice AI production readiness](https://voice.oss.codes/tools/voice-ai-production-readiness/): Check weighted launch gates across six operating areas.
+- [Asterisk troubleshooter](https://voice.oss.codes/tools/asterisk-troubleshooter/): Diagnose common SIP, RTP, ARI, and codec symptoms.
+- [Voice AI call-flow builder](https://voice.oss.codes/tools/voice-ai-call-flow-builder/): Design and export a bounded conversation flow.
+- [Voice quality tester](https://voice.oss.codes/tools/voice-quality-tester/): Analyze audio locally for level, clipping, silence, sample rate, and DC offset.
 
 ## Research directories
 
@@ -33,6 +40,9 @@ Public pricing data is a dated snapshot, currently verified 2026-07-24. Treat ca
 - [Voice AI guides](https://voice.oss.codes/guides/): Cost and deployment guides.
 - [Asterisk Voice AI configuration](https://voice.oss.codes/guides/asterisk-voice-ai-configuration/): PJSIP, dialplan, ARI, RTP, NAT, external media, security, and go-live checks.
 - [Pricing methodology](https://voice.oss.codes/methodology/): Formulas, source policy, inclusions, and exclusions.
+- [Pricing snapshot history](https://voice.oss.codes/pricing/history/): Repository-backed history of dated public pricing assumptions.
+- [Country compliance guides](https://voice.oss.codes/compliance/): Starting checklists and regulator sources for the US, India, EU, and UK.
+- [Industry call-flow templates](https://voice.oss.codes/templates/): Focused flows, integrations, metrics, and safety boundaries for six use cases.
 
 ## Project
 

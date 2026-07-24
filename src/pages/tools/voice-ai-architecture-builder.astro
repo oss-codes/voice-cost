@@ -1,0 +1,152 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { architectureOptions } from "../../data/planning";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { buildArchitectureMermaid } from "../../lib/expansion-tools";
+
+const defaults = {
+  telephony: architectureOptions.telephony[0].label,
+  runtime: architectureOptions.runtime[0].label,
+  intelligence: architectureOptions.intelligence[0].label,
+  deployment: architectureOptions.deployment[0].label,
+  region: architectureOptions.region[0].label,
+};
+const initialMermaid = buildArchitectureMermaid(defaults);
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Voice AI Architecture Builder",
+  url: "https://voice.oss.codes/tools/voice-ai-architecture-builder/",
+  applicationCategory: "DeveloperApplication",
+  description:
+    "Build and export a Voice AI architecture across telephony, runtime, model pipeline, deployment, and region.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Voice AI Architecture Builder"
+  description="Design a Voice AI call stack across SIP carrier, open-source runtime, model pipeline, deployment, and region, then export Mermaid and JSON."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="architecture builder"
+    title="Draw the systems that must agree before a caller hears audio."
+    description="Choose the telephony edge, agent runtime, model path, deployment model, and region. Export a reviewable Mermaid diagram and machine-readable bill of materials."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="builder-shell architecture-builder" data-architecture-builder autocomplete="off">
+      <div class="builder-controls">
+        {
+          Object.entries(architectureOptions).map(([name, options]) => (
+            <label class="field">
+              <span class="field-label">{name}</span>
+              <select name={name}>
+                {options.map((option) => <option value={option.id}>{option.label}</option>)}
+              </select>
+            </label>
+          ))
+        }
+        <div class="calc-actions">
+          <button class="button button-primary" type="button" data-download-json>Download JSON</button>
+          <button class="button" type="reset">Reset architecture</button>
+        </div>
+      </div>
+      <div class="builder-output">
+        <div class="output-heading">
+          <div><span class="data-label">call path</span><h2>Selected architecture</h2></div>
+          <a class="button" href="/calculator/">Price this stack</a>
+        </div>
+        <ol class="architecture-map" aria-label="Selected Voice AI architecture">
+          <li><span>01</span><strong>Caller</strong></li>
+          <li><span>02</span><strong data-node="telephony">{defaults.telephony}</strong></li>
+          <li><span>03</span><strong data-node="runtime">{defaults.runtime}</strong></li>
+          <li><span>04</span><strong data-node="intelligence">{defaults.intelligence}</strong></li>
+          <li><span>05</span><strong>Business tools</strong></li>
+        </ol>
+        <div class="architecture-deploy">
+          <span class="data-label">deployment boundary</span>
+          <strong><span data-node="deployment">{defaults.deployment}</span> / <span data-node="region">{defaults.region}</span></strong>
+        </div>
+        <article class="config-block">
+          <header>
+            <div><span class="data-label">diagram export</span><strong>architecture.mmd</strong></div>
+            <div class="config-actions"><button type="button" data-copy-mermaid>Copy Mermaid</button></div>
+          </header>
+          <pre><code data-mermaid>{initialMermaid}</code></pre>
+        </article>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="review boundary"
+      title="A diagram does not prove the call works"
+      description="Verify carrier number availability, RTP or WebSocket media, codec, regional model endpoints, data processing, concurrency, failure recovery, logging, and a paid real-number pilot."
+    />
+  </section>
+</BaseLayout>
+
+<script>
+  import { architectureOptions } from "../../data/planning";
+  import { buildArchitectureMermaid } from "../../lib/expansion-tools";
+
+  const form = document.querySelector("[data-architecture-builder]");
+  if (form instanceof HTMLFormElement) {
+    const names = ["telephony", "runtime", "intelligence", "deployment", "region"] as const;
+    const selected = (name: typeof names[number]) => {
+      const field = form.elements.namedItem(name);
+      if (!(field instanceof HTMLSelectElement)) return { id: "", label: "" };
+      const options = architectureOptions[name];
+      return options.find((option) => option.id === field.value) ?? options[0];
+    };
+    const render = () => {
+      const data = Object.fromEntries(names.map((name) => [name, selected(name).label])) as Record<typeof names[number], string>;
+      for (const name of names) {
+        const node = form.querySelector(`[data-node="${name}"]`);
+        if (node instanceof HTMLElement) node.textContent = data[name];
+      }
+      const mermaid = buildArchitectureMermaid(data);
+      const output = form.querySelector("[data-mermaid]");
+      if (output instanceof HTMLElement) output.textContent = mermaid;
+      const params = new URLSearchParams();
+      for (const name of names) params.set(name, selected(name).id);
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    };
+    const setInitialState = () => {
+      const params = new URLSearchParams(window.location.search);
+      for (const name of names) {
+        const field = form.elements.namedItem(name);
+        const candidate = params.get(name);
+        if (
+          field instanceof HTMLSelectElement &&
+          candidate &&
+          Array.from(field.options).some((option) => option.value === candidate)
+        ) field.value = candidate;
+      }
+    };
+    form.addEventListener("change", render);
+    form.addEventListener("reset", () => window.setTimeout(render));
+    form.querySelector("[data-copy-mermaid]")?.addEventListener("click", async (event) => {
+      const output = form.querySelector("[data-mermaid]");
+      if (!(output instanceof HTMLElement)) return;
+      await navigator.clipboard.writeText(output.textContent ?? "");
+      if (event.currentTarget instanceof HTMLButtonElement) event.currentTarget.textContent = "Copied";
+    });
+    form.querySelector("[data-download-json]")?.addEventListener("click", () => {
+      const data = Object.fromEntries(names.map((name) => [name, selected(name)]));
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "voice-ai-architecture.json";
+      anchor.click();
+      URL.revokeObjectURL(url);
+    });
+    setInitialState();
+    render();
+  }
+</script>
