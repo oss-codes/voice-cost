@@ -1,0 +1,5 @@
+; Match this range in the host firewall and any upstream NAT rule.
+
+[general]
+rtpstart=10000
+rtpend=20000

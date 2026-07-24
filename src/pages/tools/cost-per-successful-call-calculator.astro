@@ -1,0 +1,185 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Cost per Successful Voice AI Call Calculator",
+  url: "https://voice.oss.codes/tools/cost-per-successful-call-calculator/",
+  applicationCategory: "FinanceApplication",
+  description:
+    "Calculate Voice AI cost per successful call from attempted calls, connection rate, success rate, connected minutes, and fixed costs.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Cost per Successful Voice AI Call Calculator"
+  description="Calculate Voice AI cost per connected call and successful outcome from attempt volume, connection rate, success rate, call length, and full stack cost."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="outcome economics"
+    title="Stop optimizing the cheapest minute."
+    description="A low per-minute rate can still produce an expensive outcome when few calls connect or complete the task. Model the whole funnel from attempts to successful calls."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="metric-tool" data-outcome autocomplete="off">
+      <div class="metric-controls">
+        <label class="field">
+          <span class="field-label">Attempted calls per month</span>
+          <input name="attempts" type="number" min="1" max="10000000" value="10000" inputmode="numeric" />
+        </label>
+        <label class="field">
+          <span class="field-label">Connection rate (%)</span>
+          <input name="connection" type="number" min="0.01" max="100" step="0.1" value="35" inputmode="decimal" />
+        </label>
+        <label class="field">
+          <span class="field-label">Success rate after connection (%)</span>
+          <input name="success" type="number" min="0.01" max="100" step="0.1" value="40" inputmode="decimal" />
+          <span class="field-note">Define success before the pilot: booking, collection, qualification, or resolution.</span>
+        </label>
+        <label class="field">
+          <span class="field-label">Average connected minutes</span>
+          <input name="minutes" type="number" min="0.1" max="240" step="0.1" value="4" inputmode="decimal" />
+        </label>
+        <label class="field">
+          <span class="field-label">All-in Voice AI cost / minute</span>
+          <input name="minuteCost" type="number" min="0.001" max="10" step="0.001" value="0.12" inputmode="decimal" />
+        </label>
+        <label class="field">
+          <span class="field-label">Fixed monthly cost</span>
+          <input name="fixed" type="number" min="0" max="10000000" step="1" value="200" inputmode="decimal" />
+          <span class="field-note">Include phone numbers, hosting, observability, and other fixed services.</span>
+        </label>
+        <p class="form-error" data-form-error role="alert" aria-live="assertive" hidden></p>
+        <div class="calc-actions">
+          <button class="button" type="reset">Reset inputs</button>
+        </div>
+      </div>
+      <div class="metric-results" aria-live="polite">
+        <span class="data-label">Cost per successful call</span>
+        <strong class="metric-primary" data-success-cost>$0</strong>
+        <p class="metric-explanation">
+          <strong data-successful-calls>0</strong> successful calls from{" "}
+          <strong data-connected-calls>0</strong> connections. Monthly spend:{" "}
+          <strong data-monthly-spend>$0</strong>. Cost per connection:{" "}
+          <strong data-connected-cost>$0</strong>.
+        </p>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="pilot discipline"
+      title="Give success one testable definition"
+      description="Do not let every completed call count as success. Pick a business event that can be checked in your CRM, booking system, payment flow, or support record."
+    />
+    <div class="prose">
+      <p>
+        Compare the result with the same outcome from human agents, not only with the carrier or
+        platform bill. Add transfer handling, failed-attempt charges, compliance review, and
+        implementation cost when they are material.
+      </p>
+      <p>
+        Use the <a href="/calculator/">stack calculator</a> to estimate the all-in minute and the
+        <a href="/tools/telephony-cost-calculator/">telephony calculator</a> to isolate calling
+        charges.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { z } from "zod";
+
+  import { estimateOutcomeEconomics } from "../../lib/calculate";
+
+  const form = document.querySelector("[data-outcome]");
+  const InputSchema = z.object({
+    attemptedCalls: z.number().int().min(1).max(10_000_000),
+    connectionRate: z.number().min(0.0001).max(1),
+    successRate: z.number().min(0.0001).max(1),
+    averageConnectedMinutes: z.number().min(0.1).max(240),
+    aiCostPerMinute: z.number().min(0.001).max(10),
+    fixedMonthlyCost: z.number().min(0).max(10_000_000),
+  });
+  const money = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  });
+
+  if (form instanceof HTMLFormElement) {
+    const names = ["attempts", "connection", "success", "minutes", "minuteCost", "fixed"] as const;
+    const value = (name: string) => {
+      const field = form.elements.namedItem(name);
+      return field instanceof HTMLInputElement ? Number(field.value) : Number.NaN;
+    };
+    const output = (selector: string, text: string) => {
+      const element = form.querySelector(selector);
+      if (element instanceof HTMLElement) element.textContent = text;
+    };
+    const error = form.querySelector("[data-form-error]");
+    const results = form.querySelector(".metric-results");
+    const setInitialState = () => {
+      const params = new URLSearchParams(window.location.search);
+      for (const name of names) {
+        const candidate = params.get(name);
+        const field = form.elements.namedItem(name);
+        if (candidate !== null && field instanceof HTMLInputElement) field.value = candidate;
+      }
+    };
+    const render = () => {
+      const parsed = InputSchema.safeParse({
+        attemptedCalls: value("attempts"),
+        connectionRate: value("connection") / 100,
+        successRate: value("success") / 100,
+        averageConnectedMinutes: value("minutes"),
+        aiCostPerMinute: value("minuteCost"),
+        fixedMonthlyCost: value("fixed"),
+      });
+      if (!parsed.success) {
+        if (error instanceof HTMLElement) {
+          error.textContent =
+            "Enter at least one attempted call, rates above 0% and up to 100%, and valid non-negative cost values.";
+          error.hidden = false;
+        }
+        if (results instanceof HTMLElement) results.dataset["invalid"] = "true";
+        for (const selector of [
+          "[data-success-cost]",
+          "[data-successful-calls]",
+          "[data-connected-calls]",
+          "[data-monthly-spend]",
+          "[data-connected-cost]",
+        ]) {
+          output(selector, "Unavailable");
+        }
+        return;
+      }
+      if (error instanceof HTMLElement) {
+        error.textContent = "";
+        error.hidden = true;
+      }
+      if (results instanceof HTMLElement) delete results.dataset["invalid"];
+      const result = estimateOutcomeEconomics(parsed.data);
+      output("[data-success-cost]", money.format(result.costPerSuccessfulCall));
+      output("[data-successful-calls]", Math.round(result.successfulCalls).toLocaleString("en-US"));
+      output("[data-connected-calls]", Math.round(result.connectedCalls).toLocaleString("en-US"));
+      output("[data-monthly-spend]", money.format(result.monthlySpend));
+      output("[data-connected-cost]", money.format(result.costPerConnectedCall));
+      const params = new URLSearchParams();
+      for (const name of names) params.set(name, String(value(name)));
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    };
+    form.addEventListener("input", render);
+    form.addEventListener("reset", () => window.setTimeout(render));
+    setInitialState();
+    render();
+  }
+</script>

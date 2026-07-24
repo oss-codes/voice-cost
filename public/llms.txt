@@ -11,6 +11,8 @@ Public pricing data is a dated snapshot, currently verified 2026-07-18. Treat ca
 - [Call concurrency calculator](https://voice.oss.codes/tools/concurrency-calculator/): Estimate average, peak, and required concurrent call lines.
 - [Telephony cost calculator](https://voice.oss.codes/tools/telephony-cost-calculator/): Model carrier, recording, phone-number, and failed-attempt costs.
 - [Voice AI ROI calculator](https://voice.oss.codes/tools/voice-ai-roi-calculator/): Compare automated call costs with human-agent time.
+- [Cost per successful Voice AI call](https://voice.oss.codes/tools/cost-per-successful-call-calculator/): Model the full funnel from attempts to connected and successful outcomes.
+- [Voice AI latency calculator](https://voice.oss.codes/tools/voice-ai-latency-calculator/): Build a turn-latency budget across endpointing, STT, LLM, TTS, and network time.
 
 ## Research directories
 
@@ -25,6 +27,8 @@ Public pricing data is a dated snapshot, currently verified 2026-07-18. Treat ca
 - [Provider pricing index](https://voice.oss.codes/pricing/): Normalized public pricing profiles.
 - [Platform comparisons](https://voice.oss.codes/compare/): Like-for-like public-price comparisons.
 - [Voice AI cost guide](https://voice.oss.codes/guides/voice-ai-cost-guide/): The cost layers behind a connected call minute.
+- [Voice AI guides](https://voice.oss.codes/guides/): Cost and deployment guides.
+- [Asterisk Voice AI configuration](https://voice.oss.codes/guides/asterisk-voice-ai-configuration/): PJSIP, dialplan, ARI, RTP, NAT, external media, security, and go-live checks.
 - [Pricing methodology](https://voice.oss.codes/methodology/): Formulas, source policy, inclusions, and exclusions.
 
 ## Project

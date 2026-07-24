@@ -17,11 +17,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   />
 
   <section class="section">
-    <form class="metric-tool" data-telephony>
+    <form class="metric-tool" data-telephony autocomplete="off">
       <div class="metric-controls">
         <label class="field">
           <span class="field-label">Connected minutes</span>
-          <input name="minutes" type="number" min="1" max="10000000" value="10000" />
+          <input name="minutes" type="number" min="1" max="10000000" value="10000" inputmode="numeric" />
         </label>
         <label class="field">
           <span class="field-label">Carrier</span>
@@ -37,17 +37,21 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         </label>
         <label class="field">
           <span class="field-label">Phone numbers</span>
-          <input name="numbers" type="number" min="0" max="100000" value="3" />
+          <input name="numbers" type="number" min="0" max="100000" value="3" inputmode="numeric" />
         </label>
         <label class="field">
           <span class="field-label">Failed outbound attempts</span>
-          <input name="failed" type="number" min="0" max="10000000" value="500" />
+          <input name="failed" type="number" min="0" max="10000000" value="500" inputmode="numeric" />
         </label>
         <label class="field">
           <span class="field-label">Failed-attempt charge</span>
-          <input name="failedCost" type="number" min="0" max="10" step="0.001" value="0.015" />
+          <input name="failedCost" type="number" min="0" max="10" step="0.001" value="0.015" inputmode="decimal" />
           <span class="field-note">Set to zero when your carrier has no minimum attempt charge.</span>
         </label>
+        <p class="form-error" data-form-error role="alert" aria-live="assertive" hidden></p>
+        <div class="calc-actions">
+          <button class="button" type="reset">Reset inputs</button>
+        </div>
       </div>
       <div class="metric-results" aria-live="polite">
         <span class="data-label">Monthly telephony</span>
@@ -113,6 +117,24 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       const element = form.querySelector(selector);
       if (element instanceof HTMLElement) element.textContent = text;
     };
+    const error = form.querySelector("[data-form-error]");
+    const results = form.querySelector(".metric-results");
+    const names = ["minutes", "carrier", "recording", "numbers", "failed", "failedCost"] as const;
+    const setInitialState = () => {
+      const params = new URLSearchParams(window.location.search);
+      for (const name of names) {
+        const candidate = params.get(name);
+        const field = form.elements.namedItem(name);
+        if (candidate === null) continue;
+        if (field instanceof HTMLInputElement) field.value = candidate;
+        if (
+          field instanceof HTMLSelectElement &&
+          Array.from(field.options).some((option) => option.value === candidate)
+        ) {
+          field.value = candidate;
+        }
+      }
+    };
     const render = () => {
       const parsed = InputSchema.safeParse({
         connectedMinutes: numberValue("minutes"),
@@ -122,10 +144,33 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         failedAttempts: numberValue("failed"),
         failedAttemptCost: numberValue("failedCost"),
       });
-      if (!parsed.success) return;
+      if (!parsed.success) {
+        if (error instanceof HTMLElement) {
+          error.textContent =
+            "Enter connected minutes from 1 to 10,000,000 and valid non-negative values for phone numbers, failed attempts, and attempt cost.";
+          error.hidden = false;
+        }
+        if (results instanceof HTMLElement) results.dataset["invalid"] = "true";
+        for (const selector of [
+          "[data-monthly]",
+          "[data-minute]",
+          "[data-carrier]",
+          "[data-recording]",
+          "[data-numbers]",
+          "[data-failed]",
+        ]) {
+          output(selector, "Unavailable");
+        }
+        return;
+      }
       const carrier = carriers.find((item) => item.id === parsed.data.carrierId);
       const recording = recordingOptions.find((item) => item.id === parsed.data.recordingId);
       if (carrier === undefined || recording === undefined) return;
+      if (error instanceof HTMLElement) {
+        error.textContent = "";
+        error.hidden = true;
+      }
+      if (results instanceof HTMLElement) delete results.dataset["invalid"];
       const result = estimateTelephonyCost({
         connectedMinutes: parsed.data.connectedMinutes,
         carrierPerMinute: carrier.perMinute,
@@ -141,9 +186,19 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       output("[data-recording]", money.format(result.breakdown.recording));
       output("[data-numbers]", money.format(result.breakdown.numbers));
       output("[data-failed]", money.format(result.breakdown.failedAttempts));
+      const params = new URLSearchParams();
+      for (const name of names) {
+        const field = form.elements.namedItem(name);
+        if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) {
+          params.set(name, field.value);
+        }
+      }
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
     };
     form.addEventListener("input", render);
     form.addEventListener("change", render);
+    form.addEventListener("reset", () => window.setTimeout(render));
+    setInitialState();
     render();
   }
 </script>

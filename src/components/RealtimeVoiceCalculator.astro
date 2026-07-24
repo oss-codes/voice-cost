@@ -10,7 +10,7 @@ import {
 const realtimePlatforms = platforms.filter((platform) => !platform.bundledModels);
 ---
 
-<form class="calc-shell realtime-calc" data-realtime-calculator>
+<form class="calc-shell realtime-calc" data-realtime-calculator autocomplete="off">
   <aside class="usage-panel">
     <h2>Realtime usage</h2>
     <label class="field">
@@ -24,13 +24,19 @@ const realtimePlatforms = platforms.filter((platform) => !platform.bundledModels
     </label>
     <label class="field">
       <span class="field-label">Caller talk share (%)</span>
-      <input name="callerTalkShare" type="number" min="0" max="100" step="1" value={defaultRealtimeScenario.callerTalkShare * 100} inputmode="numeric" />
+      <input name="callerTalkShare" type="number" min="0" max="100" step="1" value={Math.round(defaultRealtimeScenario.callerTalkShare * 100)} inputmode="numeric" />
       <span class="field-note">Agent audio is the remaining share. Default: caller 55%, agent 45%.</span>
     </label>
     <div class="notice">
       <strong>why this matters</strong>
       <span>Realtime APIs charge incoming and generated audio differently. A connected minute is not one flat model minute.</span>
     </div>
+    <p class="form-error" data-form-error role="alert" aria-live="assertive" hidden></p>
+    <div class="calc-actions">
+      <button class="button button-primary" type="button" data-copy>Copy estimate link</button>
+      <button class="button" type="reset">Reset scenario</button>
+    </div>
+    <span class="sr-only" data-action-status role="status" aria-live="polite"></span>
   </aside>
 
   <div class="calc-content realtime-config">
@@ -101,6 +107,36 @@ const realtimePlatforms = platforms.filter((platform) => !platform.bundledModels
       const element = form.querySelector(`[data-output="${key}"]`);
       if (element instanceof HTMLElement) element.textContent = next;
     };
+    const resultPanel = form.querySelector(".realtime-result");
+    const formError = form.querySelector("[data-form-error]");
+    const setInvalid = () => {
+      form.dataset["invalid"] = "true";
+      if (resultPanel instanceof HTMLElement) resultPanel.dataset["invalid"] = "true";
+      if (formError instanceof HTMLElement) {
+        formError.textContent =
+          "Enter monthly connected minutes from 1 to 10,000,000, a call length from 0.1 to 240 minutes, and a caller talk share from 0% to 100%.";
+        formError.hidden = false;
+      }
+      for (const field of form.querySelectorAll("input, select")) {
+        if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) {
+          field.setAttribute("aria-invalid", String(!field.checkValidity()));
+        }
+      }
+      for (const key of ["monthly", "minute", "call", "platform", "input", "output", "carrier", "recording"]) {
+        setText(key, "Unavailable");
+      }
+    };
+    const clearInvalid = () => {
+      delete form.dataset["invalid"];
+      if (resultPanel instanceof HTMLElement) delete resultPanel.dataset["invalid"];
+      if (formError instanceof HTMLElement) {
+        formError.textContent = "";
+        formError.hidden = true;
+      }
+      for (const field of form.querySelectorAll("[aria-invalid]")) {
+        field.removeAttribute("aria-invalid");
+      }
+    };
 
     const setInitialState = () => {
       const params = new URLSearchParams(window.location.search);
@@ -123,8 +159,12 @@ const realtimePlatforms = platforms.filter((platform) => !platform.bundledModels
         carrierId: value("carrierId"),
         recordingId: value("recordingId"),
       });
-      if (!parsed.success) return;
+      if (!parsed.success) {
+        setInvalid();
+        return;
+      }
 
+      clearInvalid();
       const estimate = calculateRealtimeVoice(parsed.data);
       const model = realtimeModels.find((candidate) => candidate.id === parsed.data.realtimeModelId);
       setText("monthly", money.format(estimate.monthly));
@@ -142,12 +182,41 @@ const realtimePlatforms = platforms.filter((platform) => !platform.bundledModels
       if (model && source instanceof HTMLAnchorElement) source.href = model.sourceUrl;
 
       const params = new URLSearchParams();
-      for (const name of ["monthlyMinutes", "averageCallMinutes", "callerTalkShare", "platformId", "realtimeModelId", "carrierId", "recordingId"]) params.set(name, value(name));
+      for (const name of ["monthlyMinutes", "averageCallMinutes", "callerTalkShare", "platformId", "realtimeModelId", "carrierId", "recordingId"]) {
+        const candidate = value(name);
+        params.set(
+          name,
+          name === "callerTalkShare" ? String(Number.parseFloat(candidate)) : candidate,
+        );
+      }
       window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
     };
 
     form.addEventListener("input", render);
     form.addEventListener("change", render);
+    form.addEventListener("reset", () => window.setTimeout(render));
+
+    const copyButton = form.querySelector("[data-copy]");
+    const actionStatus = form.querySelector("[data-action-status]");
+    if (copyButton instanceof HTMLButtonElement) {
+      copyButton.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          copyButton.textContent = "Link copied";
+          if (actionStatus instanceof HTMLElement) {
+            actionStatus.textContent = "Estimate link copied to clipboard.";
+          }
+          window.setTimeout(() => {
+            copyButton.textContent = "Copy estimate link";
+          }, 1_500);
+        } catch {
+          copyButton.textContent = "Copy blocked";
+          if (actionStatus instanceof HTMLElement) {
+            actionStatus.textContent = "Clipboard access was blocked. Copy the browser address.";
+          }
+        }
+      });
+    }
     setInitialState();
     render();
   }

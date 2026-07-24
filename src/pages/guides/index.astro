@@ -1,0 +1,44 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import ToolCard from "../../components/ToolCard.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const guides = [
+  {
+    title: "What Voice AI really costs",
+    description:
+      "Build the complete minute from platform, STT, LLM, TTS, realtime audio, carrier, recording, concurrency, and operations.",
+    href: "/guides/voice-ai-cost-guide/",
+  },
+  {
+    title: "Asterisk for Voice AI",
+    description:
+      "Configure PJSIP, dialplan, ARI, RTP, NAT, external media, security, and production checks for real phone calls.",
+    href: "/guides/asterisk-voice-ai-configuration/",
+  },
+] as const;
+---
+
+<BaseLayout
+  title="Voice AI Deployment and Cost Guides"
+  description="Practical Voice AI guides for pricing, stack architecture, Asterisk SIP trunking, ARI, media bridging, security, and production deployment."
+>
+  <PageHero
+    eyebrow="field guides"
+    title="Build the bill, then build the call."
+    description="Long-form, source-linked guides for the decisions that calculators cannot make alone: cost boundaries, telephony architecture, media transport, and production safety."
+    parent={{ href: "/guides/", label: "guides" }}
+  />
+
+  <section class="section">
+    <SectionHead
+      label="guides"
+      title="Two paths from estimate to production"
+      description="Start with the cost guide when choosing a stack. Use the Asterisk guide when you need a provider-neutral telephony edge."
+    />
+    <div class="tool-grid guide-grid">
+      {guides.map((guide, index) => <ToolCard index={`0${index + 1}`} {...guide} />)}
+    </div>
+  </section>
+</BaseLayout>

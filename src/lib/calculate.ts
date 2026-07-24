@@ -208,3 +208,62 @@ export function estimateTelephonyCost(input: TelephonyCostInput) {
     },
   };
 }
+
+export type OutcomeEconomicsInput = {
+  readonly attemptedCalls: number;
+  readonly connectionRate: number;
+  readonly successRate: number;
+  readonly averageConnectedMinutes: number;
+  readonly aiCostPerMinute: number;
+  readonly fixedMonthlyCost: number;
+};
+
+export function estimateOutcomeEconomics(input: OutcomeEconomicsInput) {
+  const connectedCalls = input.attemptedCalls * input.connectionRate;
+  const successfulCalls = connectedCalls * input.successRate;
+  const connectedMinutes = connectedCalls * input.averageConnectedMinutes;
+  const monthlySpend = connectedMinutes * input.aiCostPerMinute + input.fixedMonthlyCost;
+
+  return {
+    connectedCalls,
+    successfulCalls,
+    connectedMinutes,
+    monthlySpend: roundMoney(monthlySpend),
+    costPerAttempt: monthlySpend / input.attemptedCalls,
+    costPerConnectedCall: monthlySpend / connectedCalls,
+    costPerSuccessfulCall: monthlySpend / successfulCalls,
+  };
+}
+
+export type TurnLatencyInput = {
+  readonly endpointingMs: number;
+  readonly speechToTextMs: number;
+  readonly languageModelMs: number;
+  readonly textToSpeechMs: number;
+  readonly networkMs: number;
+};
+
+const latencyLabels = {
+  endpointingMs: "endpointing",
+  speechToTextMs: "speech to text",
+  languageModelMs: "language model",
+  textToSpeechMs: "text to speech",
+  networkMs: "network",
+} as const;
+
+export function estimateTurnLatency(input: TurnLatencyInput) {
+  const components = Object.entries(input) as Array<
+    [keyof TurnLatencyInput, TurnLatencyInput[keyof TurnLatencyInput]]
+  >;
+  const totalMs = components.reduce((total, [, value]) => total + value, 0);
+  const [largestKey, largestMs] = components.reduce((largest, candidate) =>
+    candidate[1] > largest[1] ? candidate : largest,
+  );
+
+  return {
+    totalMs,
+    band: totalMs <= 500 ? "fast" : totalMs <= 1_000 ? "conversational" : "noticeable",
+    largestComponent: latencyLabels[largestKey],
+    largestMs,
+  } as const;
+}

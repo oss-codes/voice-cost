@@ -1,0 +1,13 @@
+; Keep inbound and outbound routes in separate contexts.
+
+[from-carrier]
+exten => voice-ai,1,NoOp(Inbound Voice AI call)
+ same => n,Answer()
+ same => n,Stasis(voice-ai)
+ same => n,Hangup()
+
+[voice-ai-outbound]
+exten => _+X.,1,NoOp(Outbound Voice AI call to ${EXTEN})
+ same => n,Set(CALLERID(num)=<OWNED_CALLER_ID>)
+ same => n,Dial(PJSIP/${EXTEN}@carrier-endpoint,45)
+ same => n,Hangup()

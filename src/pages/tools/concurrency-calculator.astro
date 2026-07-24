@@ -16,29 +16,33 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   />
 
   <section class="section">
-    <form class="metric-tool" data-concurrency>
+    <form class="metric-tool" data-concurrency autocomplete="off">
       <div class="metric-controls">
         <label class="field">
           <span class="field-label">Calls per month</span>
-          <input name="calls" type="number" min="1" max="10000000" value="12000" />
+          <input name="calls" type="number" min="1" max="10000000" value="12000" inputmode="numeric" />
         </label>
         <label class="field">
           <span class="field-label">Average call minutes</span>
-          <input name="minutes" type="number" min="0.1" max="240" step="0.5" value="5" />
+          <input name="minutes" type="number" min="0.1" max="240" step="0.5" value="5" inputmode="decimal" />
         </label>
         <label class="field">
           <span class="field-label">Business hours per day</span>
-          <input name="hours" type="number" min="1" max="24" step="0.5" value="10" />
+          <input name="hours" type="number" min="1" max="24" step="0.5" value="10" inputmode="decimal" />
         </label>
         <label class="field">
           <span class="field-label">Business days per month</span>
-          <input name="days" type="number" min="1" max="31" value="22" />
+          <input name="days" type="number" min="1" max="31" value="22" inputmode="numeric" />
         </label>
         <label class="field">
           <span class="field-label">Peak factor</span>
-          <input name="peak" type="number" min="1" max="10" step="0.1" value="2.4" />
+          <input name="peak" type="number" min="1" max="10" step="0.1" value="2.4" inputmode="decimal" />
           <span class="field-note">Use 2–3 for ordinary bursts; higher for campaigns or incidents.</span>
         </label>
+        <p class="form-error" data-form-error role="alert" aria-live="assertive" hidden></p>
+        <div class="calc-actions">
+          <button class="button" type="reset">Reset inputs</button>
+        </div>
       </div>
       <div class="metric-results" aria-live="polite">
         <span class="data-label">Recommended concurrency</span>
@@ -97,6 +101,17 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       const element = form.querySelector(selector);
       if (element instanceof HTMLElement) element.textContent = text;
     };
+    const error = form.querySelector("[data-form-error]");
+    const results = form.querySelector(".metric-results");
+    const names = ["calls", "minutes", "hours", "days", "peak"] as const;
+    const setInitialState = () => {
+      const params = new URLSearchParams(window.location.search);
+      for (const name of names) {
+        const candidate = params.get(name);
+        const field = form.elements.namedItem(name);
+        if (candidate !== null && field instanceof HTMLInputElement) field.value = candidate;
+      }
+    };
     const render = () => {
       const parsed = InputSchema.safeParse({
         callsPerMonth: value("calls"),
@@ -105,13 +120,34 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         businessDaysPerMonth: value("days"),
         peakFactor: value("peak"),
       });
-      if (!parsed.success) return;
+      if (!parsed.success) {
+        if (error instanceof HTMLElement) {
+          error.textContent =
+            "Enter valid call volume, handle time, business hours, business days, and a peak factor from 1 to 10.";
+          error.hidden = false;
+        }
+        if (results instanceof HTMLElement) results.dataset["invalid"] = "true";
+        output("[data-lines]", "Unavailable");
+        output("[data-average]", "Unavailable");
+        output("[data-peak]", "Unavailable");
+        return;
+      }
+      if (error instanceof HTMLElement) {
+        error.textContent = "";
+        error.hidden = true;
+      }
+      if (results instanceof HTMLElement) delete results.dataset["invalid"];
       const result = estimateConcurrency(parsed.data);
       output("[data-lines]", result.requiredLines.toLocaleString("en-US"));
       output("[data-average]", result.averageCallsInProgress.toFixed(2));
       output("[data-peak]", result.peakCallsInProgress.toFixed(2));
+      const params = new URLSearchParams();
+      for (const name of names) params.set(name, String(value(name)));
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
     };
     form.addEventListener("input", render);
+    form.addEventListener("reset", () => window.setTimeout(render));
+    setInitialState();
     render();
   }
 </script>

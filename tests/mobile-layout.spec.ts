@@ -12,7 +12,11 @@ const representativeRoutes = [
   "/alternatives/regions/india/",
   "/tools/telephony-cost-calculator/",
   "/tools/realtime-voice-cost-calculator/",
+  "/tools/voice-ai-latency-calculator/",
+  "/tools/cost-per-successful-call-calculator/",
+  "/guides/",
   "/guides/voice-ai-cost-guide/",
+  "/guides/asterisk-voice-ai-configuration/",
   "/about/",
 ] as const;
 

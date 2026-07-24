@@ -37,6 +37,16 @@ const tools = [
     href: "/tools/voice-ai-roi-calculator/",
   },
   {
+    title: "Cost per successful call",
+    description: "Model the full funnel from attempts to connected and successful outcomes.",
+    href: "/tools/cost-per-successful-call-calculator/",
+  },
+  {
+    title: "Voice AI latency",
+    description: "Budget endpointing, STT, LLM, TTS, and network delay for each spoken turn.",
+    href: "/tools/voice-ai-latency-calculator/",
+  },
+  {
     title: "Provider pricing index",
     description: "Browse source-linked pricing snapshots and understand what each advertised rate includes.",
     href: "/pricing/",
@@ -45,6 +55,11 @@ const tools = [
     title: "Voice AI cost guide",
     description: "Learn the six layers that determine real cost per connected minute.",
     href: "/guides/voice-ai-cost-guide/",
+  },
+  {
+    title: "Asterisk configuration",
+    description: "Build the SIP, PJSIP, ARI, RTP, NAT, and external-media path for a real call.",
+    href: "/guides/asterisk-voice-ai-configuration/",
   },
   {
     title: "OSS framework directory",
@@ -73,7 +88,7 @@ const structuredData = {
 
 <BaseLayout
   title="Voice OSS: Open Voice AI pricing calculators"
-  description="Compare Voice AI platforms, model stacks, telephony, concurrency, and ROI with open formulas and source-linked pricing data."
+  description="Compare Voice AI platforms, model stacks, telephony, latency, call outcomes, concurrency, and ROI with open formulas and source-linked data."
   structuredData={structuredData}
 >
   <section class="hero">
@@ -145,7 +160,7 @@ const structuredData = {
     <SectionHead
       label="02 / tools"
       title="Plan the whole call, not one line item"
-      description="Useful calculators for the decisions that happen before a Voice AI launch: stack selection, carrier spend, burst capacity, and business case."
+      description="Useful calculators and guides for the decisions before a Voice AI launch: stack selection, carrier spend, latency, burst capacity, outcome economics, and telephony deployment."
     />
     <div class="tool-grid">
       {tools.map((tool, index) => <ToolCard index={`0${index + 1}`} {...tool} />)}

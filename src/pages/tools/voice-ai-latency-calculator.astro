@@ -1,0 +1,164 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Voice AI Latency Calculator",
+  url: "https://voice.oss.codes/tools/voice-ai-latency-calculator/",
+  applicationCategory: "DeveloperApplication",
+  description:
+    "Calculate expected Voice AI response latency across endpointing, speech recognition, language model, speech generation, and network time.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Voice AI Latency Calculator"
+  description="Calculate end-to-end Voice AI turn latency across endpointing, STT, LLM, TTS, and network time, then find the slowest component."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="latency budget"
+    title="Find the pause your caller will actually hear."
+    description="Add the five delays between a caller finishing a sentence and the agent beginning its reply. The largest component tells you where optimization work is most likely to matter."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="metric-tool" data-latency autocomplete="off">
+      <div class="metric-controls">
+        <label class="field">
+          <span class="field-label">Endpointing delay</span>
+          <input name="endpointing" type="number" min="0" max="10000" value="220" inputmode="numeric" />
+          <span class="field-note">Time used to decide that the caller has stopped speaking.</span>
+        </label>
+        <label class="field">
+          <span class="field-label">Speech-to-text delay</span>
+          <input name="stt" type="number" min="0" max="10000" value="90" inputmode="numeric" />
+        </label>
+        <label class="field">
+          <span class="field-label">LLM first-token delay</span>
+          <input name="llm" type="number" min="0" max="30000" value="280" inputmode="numeric" />
+        </label>
+        <label class="field">
+          <span class="field-label">TTS first-audio delay</span>
+          <input name="tts" type="number" min="0" max="10000" value="120" inputmode="numeric" />
+        </label>
+        <label class="field">
+          <span class="field-label">Network and transport</span>
+          <input name="network" type="number" min="0" max="10000" value="80" inputmode="numeric" />
+          <span class="field-note">Use measured round-trip and media-bridge overhead, not ping alone.</span>
+        </label>
+        <p class="form-error" data-form-error role="alert" aria-live="assertive" hidden></p>
+        <div class="calc-actions">
+          <button class="button" type="reset">Reset inputs</button>
+        </div>
+      </div>
+      <div class="metric-results" aria-live="polite">
+        <span class="data-label">Estimated turn latency</span>
+        <strong class="metric-primary" data-total-latency>0 ms</strong>
+        <p class="metric-explanation">
+          This feels <strong data-latency-band>unknown</strong>. The largest modeled component is
+          <strong data-largest-component>unknown</strong> at
+          <strong data-largest-ms>0 ms</strong>.
+        </p>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="measurement"
+      title="A budget is useful only after you replace it with traces"
+      description="Measure each boundary from production calls. Endpointing, first transcript, first model token, first audio byte, and first playable audio should have separate timestamps."
+    />
+    <div class="prose">
+      <p>
+        The labels here are planning bands, not a universal quality score. Barge-in, language,
+        caller behavior, network quality, and response length can change what feels natural.
+      </p>
+      <p>
+        Start with the slowest measured component. Cutting 30 ms from every service is usually less
+        useful than removing a 400 ms endpointing delay.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { z } from "zod";
+
+  import { estimateTurnLatency } from "../../lib/calculate";
+
+  const form = document.querySelector("[data-latency]");
+  const InputSchema = z.object({
+    endpointingMs: z.number().min(0).max(10_000),
+    speechToTextMs: z.number().min(0).max(10_000),
+    languageModelMs: z.number().min(0).max(30_000),
+    textToSpeechMs: z.number().min(0).max(10_000),
+    networkMs: z.number().min(0).max(10_000),
+  });
+
+  if (form instanceof HTMLFormElement) {
+    const names = ["endpointing", "stt", "llm", "tts", "network"] as const;
+    const value = (name: string) => {
+      const field = form.elements.namedItem(name);
+      return field instanceof HTMLInputElement ? Number(field.value) : Number.NaN;
+    };
+    const output = (selector: string, text: string) => {
+      const element = form.querySelector(selector);
+      if (element instanceof HTMLElement) element.textContent = text;
+    };
+    const error = form.querySelector("[data-form-error]");
+    const results = form.querySelector(".metric-results");
+    const setInitialState = () => {
+      const params = new URLSearchParams(window.location.search);
+      for (const name of names) {
+        const candidate = params.get(name);
+        const field = form.elements.namedItem(name);
+        if (candidate !== null && field instanceof HTMLInputElement) field.value = candidate;
+      }
+    };
+    const render = () => {
+      const parsed = InputSchema.safeParse({
+        endpointingMs: value("endpointing"),
+        speechToTextMs: value("stt"),
+        languageModelMs: value("llm"),
+        textToSpeechMs: value("tts"),
+        networkMs: value("network"),
+      });
+      if (!parsed.success) {
+        if (error instanceof HTMLElement) {
+          error.textContent = "Enter a non-negative latency in milliseconds for every component.";
+          error.hidden = false;
+        }
+        if (results instanceof HTMLElement) results.dataset["invalid"] = "true";
+        output("[data-total-latency]", "Unavailable");
+        output("[data-latency-band]", "unavailable");
+        output("[data-largest-component]", "unavailable");
+        output("[data-largest-ms]", "Unavailable");
+        return;
+      }
+      if (error instanceof HTMLElement) {
+        error.textContent = "";
+        error.hidden = true;
+      }
+      if (results instanceof HTMLElement) delete results.dataset["invalid"];
+      const result = estimateTurnLatency(parsed.data);
+      output("[data-total-latency]", `${result.totalMs.toLocaleString("en-US")} ms`);
+      output("[data-latency-band]", result.band);
+      output("[data-largest-component]", result.largestComponent);
+      output("[data-largest-ms]", `${result.largestMs.toLocaleString("en-US")} ms`);
+      const params = new URLSearchParams();
+      for (const name of names) params.set(name, String(value(name)));
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    };
+    form.addEventListener("input", render);
+    form.addEventListener("reset", () => window.setTimeout(render));
+    setInitialState();
+    render();
+  }
+</script>

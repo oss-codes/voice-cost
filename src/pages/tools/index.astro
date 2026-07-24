@@ -30,6 +30,16 @@ const tools = [
     description: "Compare automated minutes with the fully loaded cost of human handling.",
     href: "/tools/voice-ai-roi-calculator/",
   },
+  {
+    title: "Cost per successful call",
+    description: "Price the full funnel from attempted calls to connected and successful outcomes.",
+    href: "/tools/cost-per-successful-call-calculator/",
+  },
+  {
+    title: "Voice AI latency",
+    description: "Build a turn-latency budget and find the slowest part of the spoken response.",
+    href: "/tools/voice-ai-latency-calculator/",
+  },
 ] as const;
 ---
 
@@ -47,11 +57,24 @@ const tools = [
   <section class="section">
     <SectionHead
       label="toolkit"
-      title="Five calculations before launch"
+      title="Seven calculations before launch"
       description="Each tool uses visible assumptions, responds instantly in the browser, and links back to its pricing or formula source."
     />
     <div class="tool-grid">
       {tools.map((tool, index) => <ToolCard index={`0${index + 1}`} {...tool} />)}
     </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="deployment"
+      title="Connect the calculator to a real phone call"
+      description="The Asterisk guide covers SIP trunking, PJSIP, dialplan, ARI, RTP, NAT, external media, security, and production checks."
+    />
+    <a class="feature-link" href="/guides/asterisk-voice-ai-configuration/">
+      <span class="data-label">configuration guide</span>
+      <strong>Asterisk for Voice AI</strong>
+      <span>Open guide →</span>
+    </a>
   </section>
 </BaseLayout>

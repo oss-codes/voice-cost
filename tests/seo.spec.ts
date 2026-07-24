@@ -21,7 +21,7 @@ test("every indexable page exposes unique crawl metadata and structured data", a
   const sitemap = await request.get(new URL(sitemapUrl).pathname);
   expect(sitemap.ok()).toBe(true);
   const sitemapText = await sitemap.text();
-  expect(sitemapText).toContain("<lastmod>2026-07-20T00:00:00.000Z</lastmod>");
+  expect(sitemapText).toContain("<lastmod>2026-07-24T00:00:00.000Z</lastmod>");
   const routes = [...sitemapText.matchAll(/<loc>(.*?)<\/loc>/g)].map(
     (match) => new URL(match[1] ?? "https://voice.oss.codes/").pathname,
   );
@@ -79,7 +79,7 @@ test("every indexable page exposes unique crawl metadata and structured data", a
     if (route !== "/") {
       expect(types, route).toContain("BreadcrumbList");
     }
-    if (types.includes("Article")) {
+    if (types.some((type) => ["Article", "BlogPosting", "TechArticle"].includes(type))) {
       expect(metadata.ogType, route).toBe("article");
       expect(metadata.articleModifiedTime, route).not.toBe("");
     } else {
@@ -105,7 +105,9 @@ test("visible breadcrumbs and footer expose meaningful internal navigation", asy
     "/open-source/",
     "/alternatives/",
     "/tools/",
+    "/guides/",
     "/guides/voice-ai-cost-guide/",
+    "/guides/asterisk-voice-ai-configuration/",
     "/methodology/",
     "/about/",
   ]) {

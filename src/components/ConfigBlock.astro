@@ -1,0 +1,49 @@
+---
+type Props = {
+  readonly title: string;
+  readonly filename: string;
+  readonly code: string;
+  readonly download?: string;
+};
+
+const { title, filename, code, download } = Astro.props;
+---
+
+<section class="config-block" data-code-block>
+  <header>
+    <div>
+      <span class="data-label">{title}</span>
+      <strong>{filename}</strong>
+    </div>
+    <div class="config-actions">
+      <button type="button" data-copy-code>Copy</button>
+      {download && <a href={download} download>Download</a>}
+    </div>
+  </header>
+  <pre tabindex="0"><code>{code}</code></pre>
+  <span class="sr-only" data-copy-status role="status" aria-live="polite"></span>
+</section>
+
+<script>
+  for (const block of document.querySelectorAll("[data-code-block]")) {
+    const button = block.querySelector("[data-copy-code]");
+    const code = block.querySelector("code");
+    const status = block.querySelector("[data-copy-status]");
+    if (!(button instanceof HTMLButtonElement) || !(code instanceof HTMLElement)) continue;
+    button.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(code.textContent ?? "");
+        button.textContent = "Copied";
+        if (status instanceof HTMLElement) status.textContent = "Configuration copied.";
+        window.setTimeout(() => {
+          button.textContent = "Copy";
+        }, 1_500);
+      } catch {
+        button.textContent = "Blocked";
+        if (status instanceof HTMLElement) {
+          status.textContent = "Clipboard access was blocked. Select the code manually.";
+        }
+      }
+    });
+  }
+</script>

@@ -10,7 +10,9 @@ import {
   calculateStack,
   estimateConcurrency,
   estimateHumanSavings,
+  estimateOutcomeEconomics,
   estimateTelephonyCost,
+  estimateTurnLatency,
 } from "./calculate";
 
 describe("calculateRealtimeVoice", () => {
@@ -119,5 +121,40 @@ describe("estimateTelephonyCost", () => {
 
     // Then
     expect(result.monthly).toBeCloseTo(175.95, 2);
+  });
+});
+
+describe("estimateOutcomeEconomics", () => {
+  test("models spend and cost per successful outcome from the full funnel", () => {
+    const result = estimateOutcomeEconomics({
+      attemptedCalls: 10_000,
+      connectionRate: 0.35,
+      successRate: 0.4,
+      averageConnectedMinutes: 4,
+      aiCostPerMinute: 0.12,
+      fixedMonthlyCost: 200,
+    });
+
+    expect(result.connectedCalls).toBe(3_500);
+    expect(result.successfulCalls).toBe(1_400);
+    expect(result.connectedMinutes).toBe(14_000);
+    expect(result.monthlySpend).toBe(1_880);
+    expect(result.costPerSuccessfulCall).toBeCloseTo(1.3429, 4);
+  });
+});
+
+describe("estimateTurnLatency", () => {
+  test("adds each turn component and returns a readable latency band", () => {
+    const result = estimateTurnLatency({
+      endpointingMs: 220,
+      speechToTextMs: 90,
+      languageModelMs: 280,
+      textToSpeechMs: 120,
+      networkMs: 80,
+    });
+
+    expect(result.totalMs).toBe(790);
+    expect(result.band).toBe("conversational");
+    expect(result.largestComponent).toBe("language model");
   });
 });

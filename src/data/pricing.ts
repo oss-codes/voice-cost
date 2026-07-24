@@ -110,7 +110,7 @@ export const sttModels = [
     perMinute: 0.12 / 60,
     detail: "$0.12/hour realtime transcription.",
     sourceUrl: "https://soniox.com/pricing",
-  }
+  },
 ] as const;
 
 export const llmModels = [

@@ -1,0 +1,11 @@
+; Generate a strong password hash with your operating system's crypt tool.
+
+[general]
+enabled=yes
+pretty=no
+
+[voice-ai]
+type=user
+read_only=no
+password_format=crypt
+password=<CRYPT_PASSWORD_HASH>

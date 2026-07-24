@@ -7,6 +7,7 @@ import {
   recordingOptions,
   sttModels,
   ttsModels,
+  VERIFIED_AT,
 } from "../data/pricing";
 
 const stacks = [
@@ -16,9 +17,14 @@ const stacks = [
 ] as const;
 ---
 
-<form class="calc-shell" data-calculator>
+<form class="calc-shell" data-calculator autocomplete="off">
   <aside class="usage-panel">
     <h2>Usage profile</h2>
+    <div class="scenario-presets" aria-label="Usage presets">
+      <button type="button" data-preset="1000">Prototype 1k</button>
+      <button type="button" data-preset="10000">Pilot 10k</button>
+      <button type="button" data-preset="100000">Scale 100k</button>
+    </div>
     <label class="field">
       <span class="field-label">Monthly call minutes</span>
       <input
@@ -47,12 +53,16 @@ const stacks = [
     </label>
     <div class="notice">
       <strong>snapshot</strong>
-      <span>USD pre-tax. Public list prices, verified 2026-07-17. Enterprise discounts excluded.</span>
+      <span>USD pre-tax. Public list prices, verified {VERIFIED_AT}. Enterprise discounts excluded.</span>
     </div>
+    <p class="form-error" data-form-error role="alert" aria-live="assertive" hidden></p>
     <div class="calc-actions">
-      <button class="button button-primary" type="button" data-copy>copy estimate link</button>
+      <button class="button button-primary" type="button" data-copy>Copy estimate link</button>
+      <button class="button" type="button" data-export>Export CSV</button>
+      <button class="button" type="reset" data-reset>Reset scenario</button>
       <a class="button" href="/methodology/">inspect formulas</a>
     </div>
+    <span class="sr-only" data-action-status role="status" aria-live="polite"></span>
   </aside>
 
   <div class="calc-content">
@@ -191,6 +201,8 @@ const stacks = [
     maximumFractionDigits: 4,
   });
   const MinutesSchema = z.coerce.number().int().min(1).max(10_000_000);
+  type Estimate = ReturnType<typeof calculateStack>;
+  let latestEstimates: Array<{ key: (typeof stackKeys)[number]; result: Estimate }> = [];
 
   if (form instanceof HTMLFormElement) {
     const numberValue = (name: string) => {
@@ -210,6 +222,57 @@ const stacks = [
       }
     };
 
+    const setFieldValue = (name: string, value: string) => {
+      const field = form.elements.namedItem(name);
+      if (field instanceof HTMLInputElement) {
+        field.value = value;
+        return;
+      }
+      if (
+        field instanceof HTMLSelectElement &&
+        Array.from(field.options).some((option) => option.value === value)
+      ) {
+        field.value = value;
+      }
+    };
+
+    const formError = form.querySelector("[data-form-error]");
+    const setInvalid = (message: string) => {
+      form.dataset["invalid"] = "true";
+      if (formError instanceof HTMLElement) {
+        formError.textContent = message;
+        formError.hidden = false;
+      }
+      for (const field of form.querySelectorAll("input, select")) {
+        if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) {
+          field.setAttribute("aria-invalid", String(!field.checkValidity()));
+        }
+      }
+      for (const key of stackKeys) {
+        for (const output of ["monthly", "minute", "call", "bar-value"]) {
+          setText(`${key}-${output}`, "Unavailable");
+        }
+        setText(`${key}-status`, "check usage input");
+        const panel = form.querySelector(`[data-stack="${key}"]`);
+        const row = form.querySelector(`[data-bar="${key}"]`);
+        const fill = row?.querySelector(".bar-fill");
+        if (panel instanceof HTMLElement) delete panel.dataset["best"];
+        if (row instanceof HTMLElement) delete row.dataset["best"];
+        if (fill instanceof HTMLElement) fill.style.setProperty("--bar-width", "0%");
+      }
+    };
+
+    const clearInvalid = () => {
+      delete form.dataset["invalid"];
+      if (formError instanceof HTMLElement) {
+        formError.textContent = "";
+        formError.hidden = true;
+      }
+      for (const field of form.querySelectorAll("[aria-invalid]")) {
+        field.removeAttribute("aria-invalid");
+      }
+    };
+
     const scenarioFor = (key: (typeof stackKeys)[number]) =>
       ScenarioSchema.safeParse({
         monthlyMinutes: numberValue("monthlyMinutes"),
@@ -224,21 +287,36 @@ const stacks = [
 
     const setInitialState = () => {
       const params = new URLSearchParams(window.location.search);
-      const minutes = MinutesSchema.safeParse(params.get("minutes"));
+      const minutes = MinutesSchema.safeParse(
+        params.get("monthlyMinutes") ?? params.get("minutes"),
+      );
       const minutesField = form.elements.namedItem("monthlyMinutes");
       if (minutes.success && minutesField instanceof HTMLInputElement) {
         minutesField.value = String(minutes.data);
       }
 
+      const averageCallMinutes = z.coerce
+        .number()
+        .min(0.1)
+        .max(240)
+        .safeParse(params.get("averageCallMinutes"));
+      if (averageCallMinutes.success) {
+        setFieldValue("averageCallMinutes", String(averageCallMinutes.data));
+      }
+
       for (const key of stackKeys) {
-        const candidate = params.get(key);
-        const field = form.elements.namedItem(`${key}-platformId`);
-        if (
-          candidate !== null &&
-          field instanceof HTMLSelectElement &&
-          Array.from(field.options).some((option) => option.value === candidate)
-        ) {
-          field.value = candidate;
+        for (const suffix of [
+          "platformId",
+          "sttId",
+          "llmId",
+          "ttsId",
+          "carrierId",
+          "recordingId",
+        ]) {
+          const name = `${key}-${suffix}`;
+          const candidate =
+            params.get(name) ?? (suffix === "platformId" ? params.get(key) : null);
+          if (candidate !== null) setFieldValue(name, candidate);
         }
       }
     };
@@ -247,7 +325,6 @@ const stacks = [
       const estimates = stackKeys.flatMap((key) => {
         const parsed = scenarioFor(key);
         if (!parsed.success) {
-          setText(`${key}-status`, "check input");
           return [];
         }
 
@@ -284,9 +361,14 @@ const stacks = [
       });
 
       if (estimates.length !== stackKeys.length) {
+        setInvalid(
+          "Enter monthly call minutes from 1 to 10,000,000 and an average call length from 0.1 to 240 minutes.",
+        );
         return;
       }
 
+      clearInvalid();
+      latestEstimates = estimates;
       const monthlyValues = estimates.map((item) => item.result.monthly);
       const maxMonthly = Math.max(...monthlyValues);
       const minMonthly = Math.min(...monthlyValues);
@@ -307,9 +389,21 @@ const stacks = [
       }
 
       const params = new URLSearchParams();
-      params.set("minutes", String(numberValue("monthlyMinutes")));
+      for (const name of ["monthlyMinutes", "averageCallMinutes"]) {
+        params.set(name, String(numberValue(name)));
+      }
       for (const key of stackKeys) {
-        params.set(key, selectValue(`${key}-platformId`));
+        for (const suffix of [
+          "platformId",
+          "sttId",
+          "llmId",
+          "ttsId",
+          "carrierId",
+          "recordingId",
+        ]) {
+          const name = `${key}-${suffix}`;
+          params.set(name, selectValue(name));
+        }
       }
       window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
     };
@@ -318,23 +412,91 @@ const stacks = [
     form.addEventListener("change", render);
 
     const copyButton = form.querySelector("[data-copy]");
+    const actionStatus = form.querySelector("[data-action-status]");
+    const reportAction = (message: string) => {
+      if (actionStatus instanceof HTMLElement) actionStatus.textContent = message;
+    };
     if (copyButton instanceof HTMLButtonElement) {
       copyButton.addEventListener("click", async () => {
         try {
           await navigator.clipboard.writeText(window.location.href);
-          copyButton.textContent = "link copied";
+          copyButton.textContent = "Link copied";
+          reportAction("Estimate link copied to clipboard.");
           window.setTimeout(() => {
-            copyButton.textContent = "copy estimate link";
+            copyButton.textContent = "Copy estimate link";
           }, 1_500);
         } catch (error) {
           if (error instanceof DOMException) {
-            copyButton.textContent = "copy blocked";
+            copyButton.textContent = "Copy blocked";
+            reportAction("Clipboard access was blocked. Copy the address from your browser.");
             return;
           }
           throw error;
         }
       });
     }
+
+    for (const preset of form.querySelectorAll("[data-preset]")) {
+      if (!(preset instanceof HTMLButtonElement)) continue;
+      preset.addEventListener("click", () => {
+        const minutes = preset.dataset["preset"];
+        if (minutes === undefined) return;
+        setFieldValue("monthlyMinutes", minutes);
+        render();
+        reportAction(`${preset.textContent?.trim() ?? "Usage"} preset applied.`);
+      });
+    }
+
+    const exportButton = form.querySelector("[data-export]");
+    if (exportButton instanceof HTMLButtonElement) {
+      exportButton.addEventListener("click", () => {
+        if (latestEstimates.length !== stackKeys.length) {
+          reportAction("Fix the usage inputs before exporting.");
+          return;
+        }
+        const header = [
+          "stack",
+          "platform",
+          "monthly",
+          "per_minute",
+          "per_call",
+          "stt",
+          "llm",
+          "tts",
+          "carrier",
+          "recording",
+        ];
+        const rows = latestEstimates.map(({ key, result }) => [
+          key.toUpperCase(),
+          selectValue(`${key}-platformId`),
+          result.monthly,
+          result.perMinute,
+          result.perCall,
+          result.breakdown.stt,
+          result.breakdown.llm,
+          result.breakdown.tts,
+          result.breakdown.carrier,
+          result.breakdown.recording,
+        ]);
+        const csv = [header, ...rows]
+          .map((row) => row.map((cell) => JSON.stringify(String(cell))).join(","))
+          .join("\n");
+        const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "voice-ai-cost-comparison.csv";
+        link.click();
+        URL.revokeObjectURL(url);
+        reportAction("CSV export downloaded.");
+      });
+    }
+
+    form.addEventListener("reset", () => {
+      window.setTimeout(() => {
+        render();
+        reportAction("Scenario reset to defaults.");
+      });
+    });
 
     setInitialState();
     render();

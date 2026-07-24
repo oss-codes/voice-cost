@@ -1,0 +1,413 @@
+---
+import ConfigBlock from "../../components/ConfigBlock.astro";
+import FaqList from "../../components/FaqList.astro";
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const pjsipConfig = `[transport-udp-nat]
+type=transport
+protocol=udp
+bind=0.0.0.0:5060
+local_net=<PRIVATE_CIDR>
+external_signaling_address=<PUBLIC_IP>
+external_media_address=<PUBLIC_IP>
+
+[carrier-registration]
+type=registration
+transport=transport-udp-nat
+outbound_auth=carrier-auth
+server_uri=sip:<SIP_HOST>
+client_uri=sip:<ACCOUNT_ID>@<SIP_HOST>
+contact_user=voice-ai
+retry_interval=60
+
+[carrier-auth]
+type=auth
+auth_type=userpass
+username=<SIP_USERNAME>
+password=<SIP_PASSWORD>
+
+[carrier-aor]
+type=aor
+contact=sip:<SIP_HOST>:5060
+qualify_frequency=30
+
+[carrier-endpoint]
+type=endpoint
+transport=transport-udp-nat
+context=from-carrier
+disallow=all
+allow=ulaw
+outbound_auth=carrier-auth
+aors=carrier-aor
+direct_media=no
+rtp_symmetric=yes
+force_rport=yes
+rewrite_contact=yes
+
+[carrier-identify]
+type=identify
+endpoint=carrier-endpoint
+match=<CARRIER_SIGNALING_CIDR>`;
+
+const dialplanConfig = `[from-carrier]
+exten => voice-ai,1,NoOp(Inbound Voice AI call)
+ same => n,Answer()
+ same => n,Stasis(voice-ai)
+ same => n,Hangup()
+
+[voice-ai-outbound]
+exten => _+X.,1,NoOp(Outbound Voice AI call to \${EXTEN})
+ same => n,Set(CALLERID(num)=<OWNED_CALLER_ID>)
+ same => n,Dial(PJSIP/\${EXTEN}@carrier-endpoint,45)
+ same => n,Hangup()`;
+
+const rtpConfig = `[general]
+rtpstart=10000
+rtpend=20000`;
+
+const httpConfig = `[general]
+enabled=yes
+bindaddr=127.0.0.1
+bindport=8088`;
+
+const ariConfig = `[general]
+enabled=yes
+pretty=no
+
+[voice-ai]
+type=user
+read_only=no
+password_format=crypt
+password=<CRYPT_PASSWORD_HASH>`;
+
+const externalMediaRequest = `POST /ari/channels/externalMedia
+  ?app=voice-ai
+  &external_host=127.0.0.1%3A60000
+  &format=ulaw`;
+
+const websocketMediaRequest = `POST /ari/channels/externalMedia
+  ?app=voice-ai
+  &transport=websocket
+  &encapsulation=none
+  &external_host=<WEBSOCKET_CLIENT_ID>
+  &format=ulaw`;
+
+const checks = `asterisk -rx "pjsip show registrations"
+asterisk -rx "pjsip show endpoints"
+asterisk -rx "pjsip show contacts"
+asterisk -rx "dialplan show from-carrier"
+asterisk -rx "http show status"
+asterisk -rx "ari show users"
+asterisk -rx "module show like websocket"`;
+
+const faqs = [
+  {
+    question: "Does Asterisk replace a Voice AI framework?",
+    answer:
+      "No. Asterisk terminates SIP calls, routes numbers, and moves media. Your ARI control app and media adapter still connect the call to speech recognition, a language model, speech generation, or a native realtime model.",
+  },
+  {
+    question: "Should I use RTP or WebSocket external media?",
+    answer:
+      "RTP works across older supported releases and many existing media adapters, but your application must handle packet format and timing. chan_websocket removes much of that work on supported point releases. Test codec, framing, flow control, and failure recovery before choosing.",
+  },
+  {
+    question: "Can Asterisk run inside Cloudflare Workers?",
+    answer:
+      "No. Asterisk is a long-running Linux communications server that accepts SIP and RTP traffic. Workers can host HTTP APIs, WebSocket control services, and coordination logic, but the Asterisk process still needs a VM, bare-metal host, or suitable container platform.",
+  },
+  {
+    question: "Why do calls have audio in only one direction?",
+    answer:
+      "The usual causes are an incorrect external media address, an unopened RTP port range, a carrier sending media from an unexpected network, or SDP advertising a private address. Inspect SIP and RTP traces before changing codecs.",
+  },
+] as const;
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  headline: "Asterisk Configuration for Voice AI Calls",
+  description:
+    "A practical Asterisk PJSIP, dialplan, ARI, RTP, NAT, security, and external-media configuration for Voice AI calls.",
+  datePublished: "2026-07-24",
+  dateModified: "2026-07-24",
+  author: {
+    "@type": "Person",
+    name: "Himanshu Maurya",
+    alternateName: "codingstark",
+  },
+  about: ["Asterisk", "Voice AI", "PJSIP", "ARI", "SIP trunking"],
+};
+---
+
+<BaseLayout
+  title="Asterisk Configuration for Voice AI Calls"
+  description="Configure Asterisk for Voice AI with working PJSIP trunk, dialplan, ARI, RTP, NAT, firewall, external media, WebSocket, security, and production checks."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="Asterisk deployment guide"
+    title="Asterisk configuration for Voice AI, from SIP invite to model audio."
+    description="A provider-neutral starting point for inbound and outbound calling. It shows which file owns each decision, how ARI receives the channel, how media reaches an AI service, and what to check before a real caller hears it."
+    parent={{ href: "/guides/", label: "guides" }}
+  >
+    <div class="cluster hero-actions">
+      <a
+        class="button button-primary"
+        href="/examples/asterisk-voice-ai-config.zip"
+        download
+      >Download configuration pack</a>
+      <a class="button" href="#configuration">Start configuration</a>
+    </div>
+  </PageHero>
+
+  <section class="section">
+    <div class="guide-facts">
+      <div>
+        <span class="data-label">recommended baseline</span>
+        <strong>Asterisk 22 LTS</strong>
+        <p>Use a currently supported point release and test the exact modules you deploy.</p>
+      </div>
+      <div>
+        <span class="data-label">call control</span>
+        <strong>ARI + Stasis</strong>
+        <p>The dialplan hands the live channel to your application.</p>
+      </div>
+      <div>
+        <span class="data-label">media bridge</span>
+        <strong>RTP or WebSocket</strong>
+        <p>Choose by Asterisk version and adapter capability.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="call path"
+      title="Know which process owns each part"
+      description="Asterisk is the telephony edge. It should not contain your prompt, business workflow, or model credentials."
+    />
+    <ol class="call-path" aria-label="Asterisk Voice AI call path">
+      <li><span>01</span><strong>SIP carrier</strong><p>Sends the inbound INVITE or accepts the outbound dial.</p></li>
+      <li><span>02</span><strong>Asterisk PJSIP</strong><p>Authenticates the trunk and maps the call into a dialplan context.</p></li>
+      <li><span>03</span><strong>Dialplan</strong><p>Answers, sets policy, and calls <code>Stasis(voice-ai)</code>.</p></li>
+      <li><span>04</span><strong>ARI control app</strong><p>Creates a mixing bridge and manages call state.</p></li>
+      <li><span>05</span><strong>Media adapter</strong><p>Moves caller audio to the AI runtime and returns generated audio.</p></li>
+      <li><span>06</span><strong>AI runtime</strong><p>Runs STT, LLM, TTS, or a native realtime speech model.</p></li>
+    </ol>
+  </section>
+
+  <section class="section" id="configuration">
+    <SectionHead
+      label="1. SIP trunk"
+      title="Start with explicit PJSIP objects"
+      description="A registration, auth object, address of record, endpoint, and identify rule solve different parts of the trunk. Some carriers omit registration or use IP authentication, so keep the provider's requirements beside this template."
+    />
+    <div class="prose">
+      <p>
+        The NAT settings advertise the public address outside your private network.
+        <code>direct_media=no</code> keeps Asterisk in the audio path, which is required when your
+        ARI application needs the media. Use carrier-published signaling networks for
+        <code>match</code>, not a broad internet range.
+      </p>
+    </div>
+    <ConfigBlock
+      title="SIP and NAT"
+      filename="/etc/asterisk/pjsip.conf"
+      code={pjsipConfig}
+      download="/examples/asterisk/pjsip.conf.example"
+    />
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="2. dialplan"
+      title="Hand only the intended calls to ARI"
+      description="The endpoint context is a security boundary. Keep carrier traffic out of internal extension contexts and keep outbound dialing in its own context."
+    />
+    <ConfigBlock
+      title="Inbound and outbound routing"
+      filename="/etc/asterisk/extensions.conf"
+      code={dialplanConfig}
+      download="/examples/asterisk/extensions.conf.example"
+    />
+    <div class="notice guide-notice">
+      <strong>provider detail</strong>
+      <span>
+        The inbound extension may be the DID, the registration <code>contact_user</code>, or
+        <code>s</code>. Confirm it from a SIP trace. Do not guess after the first 404.
+      </span>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="3. ARI"
+      title="Keep the control API private"
+      description="ARI uses Asterisk's HTTP server for REST and WebSocket events. Bind to loopback when the controller is on the same host. Use a private network or VPN plus TLS when it is remote."
+    />
+    <div class="config-pair">
+      <ConfigBlock
+        title="HTTP listener"
+        filename="/etc/asterisk/http.conf"
+        code={httpConfig}
+        download="/examples/asterisk/http.conf.example"
+      />
+      <ConfigBlock
+        title="ARI user"
+        filename="/etc/asterisk/ari.conf"
+        code={ariConfig}
+        download="/examples/asterisk/ari.conf.example"
+      />
+    </div>
+    <div class="security-callout">
+      <strong>Never expose ARI directly to the public internet.</strong>
+      <p>
+        The ARI user can answer, originate, bridge, record, and hang up calls. Store its secret
+        outside source control, restrict the listener, and rotate the credential.
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="4. RTP"
+      title="Make the media range boring and observable"
+      description="Asterisk selects RTP ports from the configured range. Open the same UDP range in the host firewall and upstream NAT, then verify the public address placed in SDP."
+    />
+    <ConfigBlock
+      title="RTP port range"
+      filename="/etc/asterisk/rtp.conf"
+      code={rtpConfig}
+      download="/examples/asterisk/rtp.conf.example"
+    />
+    <div class="prose">
+      <p>
+        The common 10000 to 20000 range is intentionally broad. You may choose a smaller range after
+        sizing concurrency and understanding how many RTP streams each call creates. Signal on 5060
+        does not carry the audio.
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="5. external media"
+      title="Choose the bridge your application can operate"
+      description="ARI creates an external-media channel, adds it to the call bridge, and receives or injects audio through the selected transport."
+    />
+    <div class="media-options">
+      <article>
+        <span class="data-label">widest compatibility</span>
+        <h3>RTP over UDP</h3>
+        <p>
+          Available since Asterisk 16.6. Your adapter owns RTP packets, timing, codec framing,
+          jitter behavior, and the return address.
+        </p>
+        <ConfigBlock title="ARI request" filename="RTP external media" code={externalMediaRequest} />
+      </article>
+      <article>
+        <span class="data-label">simpler application media</span>
+        <h3>chan_websocket</h3>
+        <p>
+          Available in Asterisk 20.16+, 21.11+, 22.6+, and 23.0+. It can frame and time most codecs,
+          generate silence, and signal flow control. Opus remains a passthrough case.
+        </p>
+        <ConfigBlock title="ARI request" filename="WebSocket external media" code={websocketMediaRequest} />
+      </article>
+    </div>
+    <div class="notice guide-notice">
+      <strong>codec rule</strong>
+      <span>
+        Start with <code>ulaw</code> when the carrier and model adapter both support it. Every
+        transcode adds work and another place for sample-rate mistakes.
+      </span>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="Cloudflare boundary"
+      title="Use Cloudflare for the web control plane, not the PBX process"
+      description="Cloudflare Workers can serve HTTP APIs and WebSockets, and Durable Objects can coordinate sessions. Asterisk still needs a Linux host that accepts SIP and RTP."
+    />
+    <div class="prose">
+      <p>
+        Workers currently create outbound TCP connections but do not accept arbitrary inbound TCP
+        sockets. SIP and RTP also use transport behavior outside a normal Worker request. If you
+        need Cloudflare in front of a TCP or UDP service, Spectrum is the relevant Layer 4 product
+        and custom applications require an Enterprise plan. It proxies traffic to Asterisk; it does
+        not replace Asterisk.
+      </p>
+      <p>
+        A practical OSS stack is Asterisk on a small regional VM, an ARI and media adapter close to
+        it, and Cloudflare for the public API, dashboard, authentication, configuration, audit
+        events, and deployment automation.
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="security"
+      title="Treat a phone system like an internet-facing payment system"
+      description="Toll fraud can become expensive before a dashboard notices it. Reduce what can connect, what can dial, and what every credential can do."
+    />
+    <ul class="production-checklist">
+      <li>Allow SIP signaling only from the carrier's published networks when the carrier supports fixed source ranges.</li>
+      <li>Restrict outbound number patterns, destinations, concurrency, call duration, and spend at both Asterisk and carrier layers.</li>
+      <li>Use TLS for SIP signaling and SRTP for media when every hop supports them.</li>
+      <li>Bind ARI and AMI to loopback or a private interface. Use separate credentials and least privilege.</li>
+      <li>Keep passwords and carrier credentials out of Git. Rotate them after any accidental exposure.</li>
+      <li>Alert on registration failures, rejected calls, spend spikes, concurrency spikes, and unfamiliar destinations.</li>
+      <li>Confirm recording consent, retention, data residency, and emergency-calling obligations for every destination.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="go-live checks"
+      title="Prove signaling, routing, control, and media separately"
+      description="Run the checks before placing a test call. During the call, turn on verbose PJSIP and RTP logging only long enough to isolate the problem."
+    />
+    <ConfigBlock title="Read-only checks" filename="Asterisk CLI" code={checks} />
+    <div class="trouble-grid">
+      <article><strong>401 or 403</strong><p>Check auth username, realm, From identity, and whether the carrier expects registration or IP authentication.</p></article>
+      <article><strong>404 or no route</strong><p>Inspect the Request-URI and confirm the endpoint context contains the received extension.</p></article>
+      <article><strong>488 codec error</strong><p>Find the codec intersection across carrier, PJSIP endpoint, bridge, and media adapter.</p></article>
+      <article><strong>one-way audio</strong><p>Inspect SDP, public media address, RTP firewall range, and the actual source of inbound media.</p></article>
+      <article><strong>call drops near 30 seconds</strong><p>Look for missing ACK traffic, NAT contact rewriting, and session-timer behavior.</p></article>
+      <article><strong>bot hears silence</strong><p>Confirm the external-media channel is in the mixing bridge and the adapter uses the requested codec and direction.</p></article>
+    </div>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="primary sources"
+      title="Configuration claims checked against current project docs"
+      description="The reusable template comes from Asterisk's own configuration model. Carrier-specific values still belong to the carrier's current trunk guide."
+    />
+    <ul class="source-list">
+      <li><a class="source-badge" href="https://docs.asterisk.org/About-the-Project/Asterisk-Versions/">supported Asterisk versions ↗</a></li>
+      <li><a class="source-badge" href="https://docs.asterisk.org/Configuration/Channel-Drivers/SIP/Configuring-res_pjsip/res_pjsip-Configuration-Examples/">PJSIP trunk examples ↗</a></li>
+      <li><a class="source-badge" href="https://docs.asterisk.org/Configuration/Channel-Drivers/SIP/Configuring-res_pjsip/Configuring-res_pjsip-to-work-through-NAT/">PJSIP NAT guide ↗</a></li>
+      <li><a class="source-badge" href="https://docs.asterisk.org/Configuration/Interfaces/Asterisk-REST-Interface-ARI/Asterisk-Configuration-for-ARI/">ARI configuration ↗</a></li>
+      <li><a class="source-badge" href="https://docs.asterisk.org/Development/Reference-Information/Asterisk-Framework-and-API-Examples/External-Media-and-ARI/">ARI external media ↗</a></li>
+      <li><a class="source-badge" href="https://docs.asterisk.org/Configuration/Channel-Drivers/WebSocket/">WebSocket media ↗</a></li>
+      <li><a class="source-badge" href="https://docs.asterisk.org/Deployment/Important-Security-Considerations/Network-Security/">Asterisk network security ↗</a></li>
+      <li><a class="source-badge" href="https://developers.cloudflare.com/workers/runtime-apis/tcp-sockets/">Cloudflare TCP sockets ↗</a></li>
+      <li><a class="source-badge" href="https://developers.cloudflare.com/spectrum/">Cloudflare Spectrum ↗</a></li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="Asterisk FAQ"
+      title="Questions that appear during the first real integration"
+      description="These are architecture answers. Verify the final number format, authentication, and codec rules with your carrier."
+    />
+    <FaqList items={faqs} />
+  </section>
+</BaseLayout>
