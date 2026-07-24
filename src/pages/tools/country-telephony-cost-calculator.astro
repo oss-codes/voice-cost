@@ -1,0 +1,337 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import {
+  COUNTRY_TELEPHONY_VERIFIED_AT,
+  countryTelephonyPresets,
+} from "../../data/country-telephony";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const initialCountry = countryTelephonyPresets[0];
+const initialRoute = initialCountry.routes[0];
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Country Telephony Cost Calculator",
+  url: "https://voice.oss.codes/tools/country-telephony-cost-calculator/",
+  applicationCategory: "BusinessApplication",
+  description:
+    "Compare source-linked Voice AI carrier costs for the United States, United Kingdom, Australia, India, and Singapore.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Country Telephony Cost Calculator for Voice AI"
+  description="Estimate Voice AI telephony costs by country, call route, connected minutes, phone numbers, recording, failed attempts, and fixed carrier fees."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="country telephony calculator"
+    title="Put the destination country back into the phone bill."
+    description="Local, mobile, and inbound carrier rates can differ sharply. Start with a dated public Twilio rate, then replace any field with the quote your carrier will actually charge."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="metric-tool country-tool" data-country-telephony autocomplete="off">
+      <div class="metric-controls">
+        <label class="field">
+          <span class="field-label">Country preset</span>
+          <select name="country">
+            {countryTelephonyPresets.map((preset) => <option value={preset.id}>{preset.country}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Call route</span>
+          <select name="route">
+            {initialCountry.routes.map((route) => <option value={route.id}>{route.label}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Connected minutes per month</span>
+          <input name="minutes" type="number" min="1" max="10000000" value="10000" inputmode="numeric" />
+        </label>
+        <div class="compact-fields">
+          <label class="field">
+            <span class="field-label">Carrier per minute</span>
+            <input name="carrierRate" type="number" min="0" max="10" step="0.0001" value={initialRoute.perMinute} inputmode="decimal" />
+          </label>
+          <label class="field">
+            <span class="field-label">Recording per minute</span>
+            <input name="recordingRate" type="number" min="0" max="10" step="0.0001" value="0.0025" inputmode="decimal" />
+          </label>
+        </div>
+        <div class="compact-fields">
+          <label class="field">
+            <span class="field-label">Phone numbers</span>
+            <input name="numbers" type="number" min="0" max="100000" value="1" inputmode="numeric" />
+          </label>
+          <label class="field">
+            <span class="field-label">Each number per month</span>
+            <input name="numberRate" type="number" min="0" max="10000" step="0.01" value={initialRoute.phoneNumberMonthly} inputmode="decimal" />
+          </label>
+        </div>
+        <div class="compact-fields">
+          <label class="field">
+            <span class="field-label">Failed attempts</span>
+            <input name="failed" type="number" min="0" max="10000000" value="0" inputmode="numeric" />
+          </label>
+          <label class="field">
+            <span class="field-label">Cost per failed attempt</span>
+            <input name="failedCost" type="number" min="0" max="10" step="0.001" value="0" inputmode="decimal" />
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">Other fixed monthly carrier cost</span>
+          <input name="fixed" type="number" min="0" max="10000000" step="0.01" value="0" inputmode="decimal" />
+        </label>
+        <div class="notice preset-note">
+          <strong data-provider>Twilio</strong>
+          <span data-preset-note>{initialCountry.note}</span>
+        </div>
+        <p class="form-error" data-form-error role="alert" aria-live="assertive" hidden></p>
+        <div class="calc-actions">
+          <button class="button" type="button" data-restore-rates>Restore preset rates</button>
+          <button class="button" type="reset">Reset inputs</button>
+        </div>
+      </div>
+      <div class="metric-results" aria-live="polite">
+        <span class="data-label">Estimated monthly telephony</span>
+        <strong class="metric-primary" data-monthly>$0</strong>
+        <p class="metric-explanation">
+          Effective connected minute: <strong data-minute>$0</strong>.
+        </p>
+        <dl class="result-breakdown">
+          <div><dt>Carrier traffic</dt><dd data-carrier>$0</dd></div>
+          <div><dt>Recording</dt><dd data-recording>$0</dd></div>
+          <div><dt>Phone numbers</dt><dd data-numbers>$0</dd></div>
+          <div><dt>Failed attempts</dt><dd data-failed>$0</dd></div>
+          <div><dt>Fixed monthly</dt><dd data-fixed>$0</dd></div>
+        </dl>
+        <a class="source-badge country-source" data-source href={initialCountry.sourceUrl}>
+          Open current provider pricing ↗
+        </a>
+        <p class="field-note">Snapshot verified {COUNTRY_TELEPHONY_VERIFIED_AT}. All preset rates are shown in USD.</p>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="public snapshot"
+      title="Rates the presets start from"
+      description="These are narrow planning examples, not complete country rate cards. Mobile, toll-free, rural, premium, international, and regulated routes can use different prices."
+    />
+    <div class="table-scroll">
+      <table class="simple-table country-rate-table">
+        <thead>
+          <tr><th>Country</th><th>Route</th><th>USD per minute</th><th>Number per month</th></tr>
+        </thead>
+        <tbody>
+          {
+            countryTelephonyPresets.flatMap((preset) =>
+              preset.routes.map((route) => (
+                <tr>
+                  <td>{preset.country}</td>
+                  <td data-label="Route">{route.label}</td>
+                  <td data-label="Per minute">${route.perMinute.toFixed(4)}</td>
+                  <td data-label="Number">
+                    {route.phoneNumberMonthly > 0 ? `$${route.phoneNumberMonthly.toFixed(2)}` : "Not included"}
+                  </td>
+                </tr>
+              )),
+            )
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { z } from "zod";
+
+  import { countryTelephonyPresets } from "../../data/country-telephony";
+  import { estimateTelephonyCost } from "../../lib/calculate";
+
+  const form = document.querySelector("[data-country-telephony]");
+  const InputSchema = z.object({
+    connectedMinutes: z.number().int().min(1).max(10_000_000),
+    carrierPerMinute: z.number().min(0).max(10),
+    recordingPerMinute: z.number().min(0).max(10),
+    phoneNumbers: z.number().int().min(0).max(100_000),
+    phoneNumberMonthly: z.number().min(0).max(10_000),
+    failedAttempts: z.number().int().min(0).max(10_000_000),
+    failedAttemptCost: z.number().min(0).max(10),
+    fixedMonthly: z.number().min(0).max(10_000_000),
+  });
+  const money = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  });
+  const preciseMoney = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 4,
+  });
+
+  if (form instanceof HTMLFormElement) {
+    const names = [
+      "country",
+      "route",
+      "minutes",
+      "carrierRate",
+      "recordingRate",
+      "numbers",
+      "numberRate",
+      "failed",
+      "failedCost",
+      "fixed",
+    ] as const;
+    const value = (fieldName: string) => {
+      const field = form.elements.namedItem(fieldName);
+      return field instanceof HTMLInputElement || field instanceof HTMLSelectElement
+        ? field.value
+        : "";
+    };
+    const numberValue = (fieldName: string) => Number(value(fieldName));
+    const setValue = (fieldName: string, nextValue: string | number) => {
+      const field = form.elements.namedItem(fieldName);
+      if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) {
+        field.value = String(nextValue);
+      }
+    };
+    const output = (selector: string, text: string) => {
+      const element = form.querySelector(selector);
+      if (element instanceof HTMLElement) element.textContent = text;
+    };
+    const getPreset = () =>
+      countryTelephonyPresets.find((preset) => preset.id === value("country")) ??
+      countryTelephonyPresets[0];
+    const getRoute = () => {
+      const preset = getPreset();
+      return preset.routes.find((route) => route.id === value("route")) ?? preset.routes[0];
+    };
+    const populateRoutes = (requestedRoute?: string) => {
+      const field = form.elements.namedItem("route");
+      const preset = getPreset();
+      if (!(field instanceof HTMLSelectElement)) return;
+      field.replaceChildren(
+        ...preset.routes.map((route) => {
+          const option = document.createElement("option");
+          option.value = route.id;
+          option.textContent = route.label;
+          return option;
+        }),
+      );
+      if (requestedRoute && preset.routes.some((route) => route.id === requestedRoute)) {
+        field.value = requestedRoute;
+      }
+    };
+    const restoreRates = () => {
+      const route = getRoute();
+      setValue("carrierRate", route.perMinute);
+      setValue("numberRate", route.phoneNumberMonthly);
+    };
+    const updatePresetCopy = () => {
+      const preset = getPreset();
+      output("[data-provider]", preset.provider);
+      output("[data-preset-note]", preset.note);
+      const source = form.querySelector("[data-source]");
+      if (source instanceof HTMLAnchorElement) source.href = preset.sourceUrl;
+    };
+    const render = () => {
+      const parsed = InputSchema.safeParse({
+        connectedMinutes: numberValue("minutes"),
+        carrierPerMinute: numberValue("carrierRate"),
+        recordingPerMinute: numberValue("recordingRate"),
+        phoneNumbers: numberValue("numbers"),
+        phoneNumberMonthly: numberValue("numberRate"),
+        failedAttempts: numberValue("failed"),
+        failedAttemptCost: numberValue("failedCost"),
+        fixedMonthly: numberValue("fixed"),
+      });
+      const error = form.querySelector("[data-form-error]");
+      const results = form.querySelector(".metric-results");
+      if (!parsed.success) {
+        if (error instanceof HTMLElement) {
+          error.textContent =
+            "Enter at least 1 connected minute and valid non-negative rates, counts, and monthly costs.";
+          error.hidden = false;
+        }
+        if (results instanceof HTMLElement) results.dataset["invalid"] = "true";
+        for (const selector of [
+          "[data-monthly]",
+          "[data-minute]",
+          "[data-carrier]",
+          "[data-recording]",
+          "[data-numbers]",
+          "[data-failed]",
+          "[data-fixed]",
+        ]) {
+          output(selector, "Unavailable");
+        }
+        return;
+      }
+      if (error instanceof HTMLElement) {
+        error.textContent = "";
+        error.hidden = true;
+      }
+      if (results instanceof HTMLElement) delete results.dataset["invalid"];
+      const result = estimateTelephonyCost(parsed.data);
+      output("[data-monthly]", money.format(result.monthly));
+      output("[data-minute]", preciseMoney.format(result.perConnectedMinute));
+      output("[data-carrier]", money.format(result.breakdown.carrier));
+      output("[data-recording]", money.format(result.breakdown.recording));
+      output("[data-numbers]", money.format(result.breakdown.numbers));
+      output("[data-failed]", money.format(result.breakdown.failedAttempts));
+      output("[data-fixed]", money.format(result.breakdown.fixedMonthly));
+      updatePresetCopy();
+      const params = new URLSearchParams();
+      for (const fieldName of names) params.set(fieldName, value(fieldName));
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    };
+    const setInitialState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const requestedCountry = params.get("country");
+      if (requestedCountry && countryTelephonyPresets.some((preset) => preset.id === requestedCountry)) {
+        setValue("country", requestedCountry);
+      }
+      populateRoutes(params.get("route") ?? undefined);
+      restoreRates();
+      for (const fieldName of names) {
+        const candidate = params.get(fieldName);
+        if (candidate !== null && fieldName !== "country" && fieldName !== "route") {
+          setValue(fieldName, candidate);
+        }
+      }
+    };
+
+    form.addEventListener("change", (event) => {
+      const target = event.target;
+      if (target instanceof HTMLSelectElement && target.name === "country") {
+        populateRoutes();
+        restoreRates();
+      }
+      if (target instanceof HTMLSelectElement && target.name === "route") restoreRates();
+      render();
+    });
+    form.addEventListener("input", render);
+    form.addEventListener("reset", () => {
+      window.setTimeout(() => {
+        populateRoutes();
+        restoreRates();
+        render();
+      });
+    });
+    form.querySelector("[data-restore-rates]")?.addEventListener("click", () => {
+      restoreRates();
+      render();
+    });
+    setInitialState();
+    render();
+  }
+</script>

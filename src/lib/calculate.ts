@@ -189,6 +189,7 @@ export type TelephonyCostInput = {
   readonly phoneNumberMonthly: number;
   readonly failedAttempts: number;
   readonly failedAttemptCost: number;
+  readonly fixedMonthly?: number;
 };
 
 export function estimateTelephonyCost(input: TelephonyCostInput) {
@@ -196,15 +197,18 @@ export function estimateTelephonyCost(input: TelephonyCostInput) {
   const recording = input.connectedMinutes * input.recordingPerMinute;
   const numbers = input.phoneNumbers * input.phoneNumberMonthly;
   const failedAttempts = input.failedAttempts * input.failedAttemptCost;
+  const fixedMonthly = input.fixedMonthly ?? 0;
+  const monthly = carrier + recording + numbers + failedAttempts + fixedMonthly;
 
   return {
-    monthly: roundMoney(carrier + recording + numbers + failedAttempts),
-    perConnectedMinute: (carrier + recording + numbers + failedAttempts) / input.connectedMinutes,
+    monthly: roundMoney(monthly),
+    perConnectedMinute: monthly / input.connectedMinutes,
     breakdown: {
       carrier: roundMoney(carrier),
       recording: roundMoney(recording),
       numbers: roundMoney(numbers),
       failedAttempts: roundMoney(failedAttempts),
+      fixedMonthly: roundMoney(fixedMonthly),
     },
   };
 }

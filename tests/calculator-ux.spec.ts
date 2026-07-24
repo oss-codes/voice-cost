@@ -113,12 +113,78 @@ test("Asterisk guide exposes the call path, safe config, and downloadable exampl
   expect((await archive.body()).byteLength).toBeGreaterThan(500);
 });
 
+test("Asterisk generator updates files while keeping identities and secrets out of the URL", async ({
+  page,
+}) => {
+  await page.goto("/tools/asterisk-config-generator/");
+
+  await expect(page.locator('[data-config-code="pjsip.conf"]')).toContainText(
+    "password=<SIP_PASSWORD>",
+  );
+  await page.locator('[name="publicAddress"]').fill("203.0.113.20");
+  await page.locator('[name="codec"]').selectOption("g722");
+  await page.locator('[name="mediaTransport"]').selectOption("websocket");
+
+  await expect(page.locator('[data-config-code="pjsip.conf"]')).toContainText(
+    "external_media_address=203.0.113.20",
+  );
+  await expect(page.locator('[data-config-code="pjsip.conf"]')).toContainText("allow=g722");
+  await expect(page.locator('[data-config-code="external-media.txt"]')).toContainText(
+    "transport=websocket",
+  );
+  expect(page.url()).toContain("codec=g722");
+  expect(page.url()).not.toContain("203.0.113.20");
+  expect(page.url()).not.toContain("sip-user");
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download all files" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("asterisk-voice-ai-config.txt");
+});
+
+test("country telephony calculator applies dated country and route presets", async ({ page }) => {
+  await page.goto("/tools/country-telephony-cost-calculator/");
+
+  await expect(page.locator("[data-monthly]")).toHaveText("$166.15");
+  await page.locator('[name="country"]').selectOption("gb");
+  await page.locator('[name="route"]').selectOption("outbound-mobile");
+  await expect(page.locator('[name="carrierRate"]')).toHaveValue("0.0305");
+  await expect(page.locator('[name="numberRate"]')).toHaveValue("3.5");
+  await expect(page.locator("[data-monthly]")).toHaveText("$333.50");
+
+  await page.locator('[name="country"]').selectOption("in");
+  await expect(page.locator("[data-preset-note]")).toContainText("no local inbound voice number");
+  await expect(page.locator('[name="numberRate"]')).toHaveValue("0");
+});
+
+test("stack recommender changes from managed launch to self-hosted telephony control", async ({
+  page,
+}) => {
+  await page.goto("/tools/voice-ai-stack-recommender/");
+  await expect(page.locator('[data-recommendation="0"] [data-name]')).toHaveText("Retell AI");
+
+  await page.locator('[name="ownership"]').selectOption("self-hosted");
+  await page.locator('[name="launch"]').selectOption("control");
+  await page.locator('[name="team"]').selectOption("telephony");
+  await page.locator('[name="volume"]').selectOption("over-100k");
+  await page.locator('[name="requireOpenSource"]').check();
+  await page.locator('[name="requireRegionControl"]').check();
+
+  await expect(page.locator('[data-recommendation="0"] [data-name]')).toHaveText(
+    "Asterisk + Pipecat",
+  );
+  await expect(page.locator('[data-recommendation="0"] [data-reasons]')).toContainText(
+    "deployment region control",
+  );
+  await expect(page).toHaveURL(/requireOpenSource=1/);
+});
+
 test("desktop tools directory fills its final row without an empty grid cell", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/tools/");
 
   const cards = page.locator(".tool-grid > .tool-card");
-  await expect(cards).toHaveCount(7);
+  await expect(cards).toHaveCount(10);
   const grid = await page.locator(".tool-grid").boundingBox();
   const last = await cards.last().boundingBox();
   expect(last?.width ?? 0).toBeGreaterThan((grid?.width ?? 0) * 0.9);

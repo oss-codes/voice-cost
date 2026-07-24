@@ -2,7 +2,7 @@
 
 Open, source-linked Voice AI pricing calculators, framework research, and global platform directories for `voice.oss.codes`.
 
-The Astro site includes static pipeline, realtime speech-to-speech, latency, concurrency, telephony, ROI, and successful-call calculators; provider pricing and head-to-head comparisons; open-source framework and platform-alternative directories; and long-form cost and Asterisk deployment guides. `/llms.txt` provides an LLM-readable index.
+The Astro site includes static pipeline, realtime speech-to-speech, latency, concurrency, country telephony, ROI, and successful-call calculators; a deterministic stack recommender; an Asterisk configuration generator; provider pricing and head-to-head comparisons; open-source framework and platform-alternative directories; and long-form cost and deployment guides. `/llms.txt` provides an LLM-readable index.
 
 ## Commands
 

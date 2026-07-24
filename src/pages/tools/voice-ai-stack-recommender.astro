@@ -1,0 +1,243 @@
+---
+import PageHero from "../../components/PageHero.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { stackProfiles } from "../../data/stack-recommendations";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { recommendStacks, type StackPreference } from "../../lib/recommend-stack";
+
+const defaultPreference = {
+  ownership: "managed",
+  channel: "phone",
+  launch: "days",
+  team: "app",
+  volume: "under-10k",
+  requireOpenSource: false,
+  requireRegionControl: false,
+} as const satisfies StackPreference;
+const initialResults = recommendStacks(defaultPreference).slice(0, 3);
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Voice AI Stack Recommender",
+  url: "https://voice.oss.codes/tools/voice-ai-stack-recommender/",
+  applicationCategory: "DeveloperApplication",
+  description:
+    "Compare managed, hybrid, and self-hosted Voice AI stacks with a transparent deterministic fit score.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
+---
+
+<BaseLayout
+  title="Voice AI Stack Recommender"
+  description="Choose a Voice AI stack based on ownership, channels, launch speed, team skills, scale, open-source requirements, and deployment-region control."
+  structuredData={structuredData}
+>
+  <PageHero
+    eyebrow="stack recommender"
+    title="Turn architecture preferences into a shortlist you can challenge."
+    description="This is a transparent rules engine, not an AI verdict. Change 7 practical constraints and inspect why each managed, hybrid, or self-hosted stack moved up or down."
+    parent={{ href: "/tools/", label: "tools" }}
+  />
+
+  <section class="section">
+    <form class="builder-shell recommender-shell" data-stack-recommender autocomplete="off">
+      <div class="builder-controls">
+        <label class="field">
+          <span class="field-label">Ownership model</span>
+          <select name="ownership">
+            <option value="managed">Managed platform</option>
+            <option value="hybrid">Open core or managed hosting</option>
+            <option value="self-hosted">Self-hosted runtime</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Primary channel</span>
+          <select name="channel">
+            <option value="phone">Phone calls</option>
+            <option value="web">Browser or app voice</option>
+            <option value="multimodal">Voice, video, and multimodal</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Launch preference</span>
+          <select name="launch">
+            <option value="days">Ship in days</option>
+            <option value="weeks">Build over several weeks</option>
+            <option value="control">Prioritize control over speed</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Strongest team skill</span>
+          <select name="team">
+            <option value="app">Application and API development</option>
+            <option value="realtime">Realtime media engineering</option>
+            <option value="telephony">SIP and telephony operations</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Monthly connected minutes</span>
+          <select name="volume">
+            <option value="under-10k">Under 10,000</option>
+            <option value="10k-100k">10,000 to 100,000</option>
+            <option value="over-100k">Over 100,000</option>
+          </select>
+        </label>
+        <label class="check-field">
+          <input name="requireOpenSource" type="checkbox" />
+          <span><strong>Require source access</strong><small>Penalize closed managed runtimes.</small></span>
+        </label>
+        <label class="check-field">
+          <input name="requireRegionControl" type="checkbox" />
+          <span><strong>Require deployment-region control</strong><small>Favor stacks you can place in your chosen region.</small></span>
+        </label>
+        <div class="notice">
+          <strong>scoring</strong>
+          <span>Ownership 5, channel 4, launch 3, team 2, open source 5, region control 4, and volume fit up to 2 points.</span>
+        </div>
+        <div class="calc-actions">
+          <button class="button" type="reset">Reset preferences</button>
+          <a class="button" href="/calculator/">Price a shortlist</a>
+        </div>
+      </div>
+
+      <div class="builder-output recommendation-output" aria-live="polite">
+        <div class="output-heading">
+          <div>
+            <span class="data-label">ranked starting points</span>
+            <h2>Top 3 by visible fit score</h2>
+          </div>
+          <span class="output-status">Not a vendor endorsement</span>
+        </div>
+        <div class="recommendation-list">
+          {
+            initialResults.map((result, index) => (
+              <article class="recommendation-card" data-recommendation={index}>
+                <header>
+                  <span class="card-index" data-rank>{String(index + 1).padStart(2, "0")}</span>
+                  <span class="score-pill"><span data-score>{result.score}</span> points</span>
+                </header>
+                <h3 data-name>{result.profile.name}</h3>
+                <p data-summary>{result.profile.summary}</p>
+                <div class="recommendation-reasons">
+                  <span class="data-label">why it scored</span>
+                  <ul data-reasons>
+                    {result.reasons.map((reason) => <li>{reason}</li>)}
+                  </ul>
+                </div>
+                <p class="tradeoff"><strong>Watch:</strong> <span data-tradeoff>{result.profile.tradeoff}</span></p>
+                <a class="button" data-href href={result.profile.href}>Inspect this option</a>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <SectionHead
+      label="included choices"
+      title={`${stackProfiles.length} distinct ways to own the call path`}
+      description="The shortlist covers managed APIs, open hybrid runtimes, browser and multimodal infrastructure, India-friendly open orchestration, and a self-hosted Asterisk telephony edge."
+    />
+    <div class="source-list">
+      {stackProfiles.map((profile) => <a class="source-badge" href={profile.href}>{profile.name}</a>)}
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { z } from "zod";
+
+  import { recommendStacks } from "../../lib/recommend-stack";
+
+  const form = document.querySelector("[data-stack-recommender]");
+  const PreferenceSchema = z.object({
+    ownership: z.enum(["managed", "hybrid", "self-hosted"]),
+    channel: z.enum(["phone", "web", "multimodal"]),
+    launch: z.enum(["days", "weeks", "control"]),
+    team: z.enum(["app", "realtime", "telephony"]),
+    volume: z.enum(["under-10k", "10k-100k", "over-100k"]),
+    requireOpenSource: z.boolean(),
+    requireRegionControl: z.boolean(),
+  });
+
+  if (form instanceof HTMLFormElement) {
+    const names = ["ownership", "channel", "launch", "team", "volume"] as const;
+    const selectValue = (fieldName: string) => {
+      const field = form.elements.namedItem(fieldName);
+      return field instanceof HTMLSelectElement ? field.value : "";
+    };
+    const checked = (fieldName: string) => {
+      const field = form.elements.namedItem(fieldName);
+      return field instanceof HTMLInputElement && field.checked;
+    };
+    const setInitialState = () => {
+      const params = new URLSearchParams(window.location.search);
+      for (const fieldName of names) {
+        const field = form.elements.namedItem(fieldName);
+        const candidate = params.get(fieldName);
+        if (
+          field instanceof HTMLSelectElement &&
+          candidate &&
+          Array.from(field.options).some((option) => option.value === candidate)
+        ) {
+          field.value = candidate;
+        }
+      }
+      for (const fieldName of ["requireOpenSource", "requireRegionControl"] as const) {
+        const field = form.elements.namedItem(fieldName);
+        if (field instanceof HTMLInputElement) field.checked = params.get(fieldName) === "1";
+      }
+    };
+    const render = () => {
+      const parsed = PreferenceSchema.safeParse({
+        ownership: selectValue("ownership"),
+        channel: selectValue("channel"),
+        launch: selectValue("launch"),
+        team: selectValue("team"),
+        volume: selectValue("volume"),
+        requireOpenSource: checked("requireOpenSource"),
+        requireRegionControl: checked("requireRegionControl"),
+      });
+      if (!parsed.success) return;
+      const results = recommendStacks(parsed.data).slice(0, 3);
+      results.forEach((result, index) => {
+        const card = form.querySelector(`[data-recommendation="${index}"]`);
+        if (!(card instanceof HTMLElement)) return;
+        const text = (selector: string, content: string) => {
+          const element = card.querySelector(selector);
+          if (element instanceof HTMLElement) element.textContent = content;
+        };
+        text("[data-rank]", String(index + 1).padStart(2, "0"));
+        text("[data-score]", String(result.score));
+        text("[data-name]", result.profile.name);
+        text("[data-summary]", result.profile.summary);
+        text("[data-tradeoff]", result.profile.tradeoff);
+        const reasons = card.querySelector("[data-reasons]");
+        if (reasons instanceof HTMLUListElement) {
+          reasons.replaceChildren(
+            ...result.reasons.map((reason) => {
+              const item = document.createElement("li");
+              item.textContent = reason;
+              return item;
+            }),
+          );
+        }
+        const link = card.querySelector("[data-href]");
+        if (link instanceof HTMLAnchorElement) link.href = result.profile.href;
+      });
+      const params = new URLSearchParams();
+      for (const fieldName of names) params.set(fieldName, selectValue(fieldName));
+      params.set("requireOpenSource", checked("requireOpenSource") ? "1" : "0");
+      params.set("requireRegionControl", checked("requireRegionControl") ? "1" : "0");
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    };
+
+    form.addEventListener("input", render);
+    form.addEventListener("change", render);
+    form.addEventListener("reset", () => window.setTimeout(render));
+    setInitialState();
+    render();
+  }
+</script>

@@ -2,7 +2,7 @@
 
 > Voice OSS is an open, source-linked Voice AI cost calculator, pricing research site, framework directory, and platform-alternatives guide by Himanshu Maurya (codingstark). The canonical domain is https://voice.oss.codes.
 
-Public pricing data is a dated snapshot, currently verified 2026-07-18. Treat calculator results as planning estimates, not vendor quotes. Follow the primary-source links on each page before making a purchase or architecture decision.
+Public pricing data is a dated snapshot, currently verified 2026-07-24. Treat calculator results as planning estimates, not vendor quotes. Follow the primary-source links on each page before making a purchase or architecture decision.
 
 ## Core tools
 
@@ -13,6 +13,9 @@ Public pricing data is a dated snapshot, currently verified 2026-07-18. Treat ca
 - [Voice AI ROI calculator](https://voice.oss.codes/tools/voice-ai-roi-calculator/): Compare automated call costs with human-agent time.
 - [Cost per successful Voice AI call](https://voice.oss.codes/tools/cost-per-successful-call-calculator/): Model the full funnel from attempts to connected and successful outcomes.
 - [Voice AI latency calculator](https://voice.oss.codes/tools/voice-ai-latency-calculator/): Build a turn-latency budget across endpointing, STT, LLM, TTS, and network time.
+- [Country telephony cost calculator](https://voice.oss.codes/tools/country-telephony-cost-calculator/): Model source-linked local, mobile, and inbound carrier assumptions for the United States, United Kingdom, Australia, India, and Singapore.
+- [Voice AI stack recommender](https://voice.oss.codes/tools/voice-ai-stack-recommender/): Rank managed, hybrid, and self-hosted stacks with a transparent deterministic score.
+- [Asterisk configuration generator](https://voice.oss.codes/tools/asterisk-config-generator/): Generate PJSIP, dialplan, RTP, HTTP, ARI, and external-media files without collecting passwords.
 
 ## Research directories
 
